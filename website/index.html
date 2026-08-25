@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeMemory — The Persistent Engineering Context Layer for AI Agents</title>
+  
+  <!-- Primary Meta Tags -->
+  <meta name="title" content="CodeMemory — The Persistent Engineering Context Layer for AI Agents">
+  <meta name="description" content="Local-first codebase memory engine and MCP server for AI coding assistants. Indexes multi-language AST symbols, dependency graphs, and serves change-aware context slices.">
+  <meta name="keywords" content="CodeMemory, AI Agents, MCP, Model Context Protocol, Codebase Memory, AST Analysis, TypeScript, Python, LLM Context, AI Pair Programming, Developer Tools, SQLite WAL">
+  <meta name="author" content="Eldrex Delos Reyes Bula">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0b0f19">
+  <link rel="canonical" href="https://codemem.vercel.app/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://codemem.vercel.app/">
+  <meta property="og:title" content="CodeMemory — The Persistent Engineering Context Layer for AI Agents">
+  <meta property="og:description" content="Local-first codebase memory engine and MCP server for AI coding assistants. Indexes AST symbols, callers, and serves change-aware context slices.">
+  <meta property="og:image" content="./assets/codememory-logo.png">
+  <meta property="og:site_name" content="CodeMemory Documentation">
+  <meta property="og:locale" content="en_US">
+
+  <!-- Twitter / X -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://codemem.vercel.app/">
+  <meta property="twitter:title" content="CodeMemory — The Persistent Engineering Context Layer for AI Agents">
+  <meta property="twitter:description" content="Local-first codebase memory engine and MCP server for AI coding assistants. Real-time file watcher and native Model Context Protocol support.">
+  <meta property="twitter:image" content="./assets/codememory-logo.png">
+  <meta name="twitter:creator" content="@eldrex">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="./assets/codememory-logo.png">
+  <link rel="apple-touch-icon" href="./assets/codememory-logo.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-sans/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-mono/style.css">
+
+  <link rel="stylesheet" href="./style.css">
+
+  <!-- Prism.js Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markdown.min.js"></script>
+
+  <!-- Marked.js for fast client-side markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Mermaid.js for live browser diagram rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <!-- Cytoscape.js for high-performance interactive graph visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      window.mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        themeVariables: {
+          darkMode: true,
+          background: '#0d1322',
+          primaryColor: '#1e293b',
+          primaryTextColor: '#f8fafc',
+          primaryBorderColor: '#38bdf8',
+          lineColor: '#38bdf8',
+          secondaryColor: '#0f172a',
+          tertiaryColor: '#1e293b'
+        }
+      });
+    }
+  </script>
+
+  <!-- Schema.org Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "CodeMemory",
+        "headline": "The Persistent Intelligence Layer for Codebases",
+        "operatingSystem": "Cross-platform (macOS, Linux, Windows)",
+        "applicationCategory": "DeveloperApplication",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "description": "Local-first codebase memory engine and Model Context Protocol (MCP) server for AI coding assistants.",
+        "softwareVersion": "1.0.0",
+        "author": {
+          "@type": "Person",
+          "name": "Eldrex Delos Reyes Bula"
+        },
+        "license": "https://opensource.org/licenses/MIT",
+        "url": "https://codemem.vercel.app/"
+      },
+      {
+        "@type": "WebSite",
+        "url": "https://codemem.vercel.app/",
+        "name": "CodeMemory Documentation & Architecture Explorer",
+        "description": "Documentation, API references, architecture guides, and interactive visualizer for CodeMemory.",
+        "publisher": {
+          "@type": "Person",
+          "name": "Eldrex Delos Reyes Bula"
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+
+<body>
+  <!-- Reading Progress Bar -->
+  <div id="reading-progress-bar" class="reading-progress-bar"></div>
+
+  <!-- App Mount Point with SSR Fallback Content -->
+  <div id="app">
+    <noscript>
+      <div style="max-width: 800px; margin: 40px auto; padding: 24px; font-family: sans-serif; line-height: 1.6; color: #f8fafc; background: #0b0f19;">
+        <h1>CodeMemory — The Persistent Memory Layer for Your Codebase</h1>
+        <p>CodeMemory watches your repository in real-time, indexes multi-language AST symbols &amp; dependency graphs, and serves change-aware context slices directly to AI agents over native MCP.</p>
+        <h2>Quick Start</h2>
+        <pre style="background: #111827; padding: 16px; border-radius: 8px; color: #38bdf8;"><code>npx @eldrex/codememory init</code></pre>
+        <h2>Documentation &amp; Visualizer Index</h2>
+        <ul>
+          <li><a href="#quick-start" style="color: #38bdf8;">Quick Start Guide</a></li>
+          <li><a href="#installation" style="color: #38bdf8;">Installation Guide</a></li>
+          <li><a href="#cli-reference" style="color: #38bdf8;">CLI Command Reference</a></li>
+          <li><a href="#mcp-protocol" style="color: #38bdf8;">Model Context Protocol (MCP) Integration</a></li>
+          <li><a href="#architecture" style="color: #38bdf8;">Architecture &amp; System Design</a></li>
+          <li><a href="#token-optimization" style="color: #38bdf8;">Token Optimization Guide</a></li>
+        </ul>
+      </div>
+    </noscript>
+  </div>
+
+  <!-- CairnJS v1.2.0 Application Entrypoint -->
+  <script type="module" src="./app.js"></script>
+</body>
+
+</html>

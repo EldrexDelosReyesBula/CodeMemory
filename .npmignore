@@ -1,0 +1,24 @@
+# Source & Dev
+src/
+tests/
+*.tsbuildinfo
+tsconfig.json
+.devdiff/
+.gemini/
+.vscode/
+.idea/
+
+# Local cache & DB
+.codememory/
+*.db
+*.db-wal
+*.db-shm
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docs markdown source (pre-embedded in website/docs-data.js)
+docs/
+CAIRNJS_FEEDBACK_REPORT.md
+vercel.json

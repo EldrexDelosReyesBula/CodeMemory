@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# CodeMemory local intelligence cache & databases
+.codememory/
+*.db
+*.db-wal
+*.db-shm
+
+# Internal & agent scratch files
+CAIRNJS_FEEDBACK_REPORT.md
+SKILLS.md
+.gemini/
+.devdiff/
+scratch/
+
+# Logs & Environment
+*.log
+npm-debug.log*
+.env
+.env.local
+.DS_Store
+Thumbs.db
