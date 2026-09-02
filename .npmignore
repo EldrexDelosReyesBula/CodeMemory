@@ -22,3 +22,6 @@ npm-debug.log*
 docs/
 CAIRNJS_FEEDBACK_REPORT.md
 vercel.json
+
+# Duplicate root-level asset (canonical copy is website/assets/codememory-logo.png)
+website/codememory-logo.png

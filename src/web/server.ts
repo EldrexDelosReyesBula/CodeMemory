@@ -1,15 +1,19 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { URL } from 'node:url';
+import { URL, fileURLToPath } from 'node:url';
 import type { CodeMemoryDB } from '../db/database.js';
 import { ContextEngine } from '../context/ranker.js';
 import { MermaidGenerator } from '../generator/mermaid.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface WebServerOptions {
   port?: number;
   host?: string;
   rootDir?: string;
+  packageDir?: string;
 }
 
 export class CodeMemoryWebServer {
@@ -20,6 +24,7 @@ export class CodeMemoryWebServer {
   private port: number;
   private host: string;
   private rootDir: string;
+  private packageDir: string;
   private sseClients: Set<http.ServerResponse> = new Set();
 
   constructor(db: CodeMemoryDB, options: WebServerOptions = {}) {
@@ -29,6 +34,23 @@ export class CodeMemoryWebServer {
     this.port = options.port || 3737;
     this.host = options.host || '127.0.0.1';
     this.rootDir = options.rootDir || process.cwd();
+    this.packageDir = options.packageDir || this.resolvePackageDir();
+  }
+
+  private resolvePackageDir(): string {
+    const candidates = [
+      path.resolve(__dirname, '../..'),
+      path.resolve(__dirname, '..'),
+      path.resolve(__dirname, '.'),
+      this.rootDir,
+      process.cwd(),
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(path.join(c, 'website', 'index.html'))) {
+        return c;
+      }
+    }
+    return process.cwd();
   }
 
   /**
@@ -483,10 +505,36 @@ export class CodeMemoryWebServer {
     return docs;
   }
 
+  private getMimeType(ext: string): string {
+    const mimeTypes: Record<string, string> = {
+      '.html': 'text/html; charset=utf-8',
+      '.css': 'text/css; charset=utf-8',
+      '.js': 'application/javascript; charset=utf-8',
+      '.mjs': 'application/javascript; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+      '.svg': 'image/svg+xml',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.ico': 'image/x-icon',
+      '.txt': 'text/plain; charset=utf-8',
+      '.xml': 'application/xml; charset=utf-8',
+      '.md': 'text/markdown; charset=utf-8',
+      '.woff2': 'font/woff2',
+      '.woff': 'font/woff',
+      '.ttf': 'font/ttf',
+    };
+    return mimeTypes[ext.toLowerCase()] || 'application/octet-stream';
+  }
+
   private handleStaticRequest(pathname: string, params: URLSearchParams, res: http.ServerResponse): void {
+    const websiteDir = path.join(this.packageDir, 'website');
+
     // 1. Check for robots.txt & sitemap.xml
     if (pathname === '/robots.txt') {
-      const robotsPath = path.join(this.rootDir, 'website', 'robots.txt');
+      const robotsPath = path.join(websiteDir, 'robots.txt');
       if (fs.existsSync(robotsPath)) {
         res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
         fs.createReadStream(robotsPath).pipe(res);
@@ -495,7 +543,7 @@ export class CodeMemoryWebServer {
     }
 
     if (pathname === '/sitemap.xml') {
-      const sitemapPath = path.join(this.rootDir, 'website', 'sitemap.xml');
+      const sitemapPath = path.join(websiteDir, 'sitemap.xml');
       if (fs.existsSync(sitemapPath)) {
         res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
         fs.createReadStream(sitemapPath).pipe(res);
@@ -503,23 +551,39 @@ export class CodeMemoryWebServer {
       }
     }
 
-    // 2. Handle CairnJS module requested by app.js
-    if (pathname.includes('cairn.module.js')) {
-      const cairnPath = path.join(this.rootDir, 'node_modules', '@eldrex', 'cairnjs', 'dist', 'cairn.module.js');
-      if (fs.existsSync(cairnPath)) {
-        res.writeHead(200, { 'Content-Type': 'application/javascript' });
-        fs.createReadStream(cairnPath).pipe(res);
-        return;
+    // 2. Handle CairnJS module requested by app.js or direct import
+    if (pathname.includes('cairn.module.js') || pathname.endsWith('/cairn.js') || pathname === '/cairn.js') {
+      const candidates = [
+        path.join(websiteDir, 'cairn.js'),
+        path.join(this.packageDir, 'node_modules', '@eldrex', 'cairnjs', 'dist', 'cairn.module.js'),
+        path.join(this.rootDir, 'node_modules', '@eldrex', 'cairnjs', 'dist', 'cairn.module.js'),
+      ];
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+          fs.createReadStream(p).pipe(res);
+          return;
+        }
       }
     }
 
     // 3. Handle /assets/ requests
     if (pathname.startsWith('/assets/')) {
-      const assetPath = path.join(this.rootDir, pathname);
-      if (fs.existsSync(assetPath) && !fs.statSync(assetPath).isDirectory()) {
-        res.writeHead(200, { 'Content-Type': 'image/png' });
-        fs.createReadStream(assetPath).pipe(res);
-        return;
+      const relAsset = pathname.replace(/^\/assets\//, '');
+      const assetCandidates = [
+        path.join(websiteDir, 'assets', relAsset),
+        path.join(websiteDir, relAsset),
+        path.join(this.packageDir, 'assets', relAsset),
+        path.join(this.rootDir, 'assets', relAsset),
+        path.join(this.rootDir, pathname),
+      ];
+      for (const assetPath of assetCandidates) {
+        if (fs.existsSync(assetPath) && !fs.statSync(assetPath).isDirectory()) {
+          const ext = path.extname(assetPath).toLowerCase();
+          res.writeHead(200, { 'Content-Type': this.getMimeType(ext) });
+          fs.createReadStream(assetPath).pipe(res);
+          return;
+        }
       }
     }
 
@@ -533,60 +597,48 @@ export class CodeMemoryWebServer {
       }
     }
 
-    // 5. Handle HTML Document Page SSR Injection for `/`, `/docs`, `/docs/:id`
-    const isDocRoute = pathname.startsWith('/docs/') || pathname === '/docs' || pathname === '/';
-    if (isDocRoute && !path.extname(pathname)) {
-      const indexPath = path.join(this.rootDir, 'website', 'index.html');
-      if (fs.existsSync(indexPath)) {
-        let docId = params.get('id') || params.get('doc');
-        if (!docId && pathname.startsWith('/docs/')) {
-          docId = pathname.replace('/docs/', '').replace(/\/$/, '');
-        }
-
-        let html = fs.readFileSync(indexPath, 'utf8');
-
-        // If a specific doc is targeted, dynamically inject SEO meta tags & pre-render title
-        if (docId) {
-          const docs = this.getDocumentationList();
-          const doc = docs.find((d) => d.id === docId);
-          if (doc) {
-            const pageTitle = `${doc.title} — CodeMemory Docs`;
-            const cleanDesc = doc.content.slice(0, 160).replace(/[#`*\n]/g, ' ').trim();
-            html = html.replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>`);
-            html = html.replace(/<meta name="description" content=".*?"/, `<meta name="description" content="${cleanDesc}"`);
-            html = html.replace(/<meta property="og:title" content=".*?"/, `<meta property="og:title" content="${pageTitle}"`);
-            html = html.replace(/<meta property="og:description" content=".*?"/, `<meta property="og:description" content="${cleanDesc}"`);
-          }
-        }
-
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(html);
-        return;
-      }
-    }
-
-    const websiteDir = path.join(this.rootDir, 'website');
-    const safePath = path.join(websiteDir, pathname === '/' ? 'index.html' : pathname);
-
-    if (!fs.existsSync(safePath) || fs.statSync(safePath).isDirectory()) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('404 Not Found');
+    // 5. Try direct static file in website/ directory
+    const cleanPath = pathname.startsWith('/') ? pathname.slice(1) : pathname;
+    const directFilePath = path.join(websiteDir, cleanPath);
+    if (cleanPath && fs.existsSync(directFilePath) && !fs.statSync(directFilePath).isDirectory()) {
+      const ext = path.extname(directFilePath).toLowerCase();
+      res.writeHead(200, { 'Content-Type': this.getMimeType(ext) });
+      fs.createReadStream(directFilePath).pipe(res);
       return;
     }
 
-    const ext = path.extname(safePath);
-    const mimeTypes: Record<string, string> = {
-      '.html': 'text/html',
-      '.css': 'text/css',
-      '.js': 'application/javascript',
-      '.json': 'application/json',
-      '.svg': 'image/svg+xml',
-      '.png': 'image/png',
-      '.txt': 'text/plain',
-      '.xml': 'application/xml',
-    };
+    // 6. Handle HTML Document Page / SPA Root & Routing (`/`, `/docs`, `/docs/:id`, etc.)
+    const isDocRoute = pathname.startsWith('/docs/') || pathname === '/docs' || pathname === '/' || !path.extname(pathname);
+    const indexPath = path.join(websiteDir, 'index.html');
+    if (isDocRoute && fs.existsSync(indexPath)) {
+      let docId = params.get('id') || params.get('doc');
+      if (!docId && pathname.startsWith('/docs/')) {
+        docId = pathname.replace('/docs/', '').replace(/\/$/, '');
+      }
 
-    res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'text/plain' });
-    fs.createReadStream(safePath).pipe(res);
+      let html = fs.readFileSync(indexPath, 'utf8');
+
+      // If a specific doc is targeted, dynamically inject SEO meta tags & pre-render title
+      if (docId) {
+        const docs = this.getDocumentationList();
+        const doc = docs.find((d) => d.id === docId);
+        if (doc) {
+          const pageTitle = `${doc.title} — CodeMemory Docs`;
+          const cleanDesc = doc.content.slice(0, 160).replace(/[#`*\n]/g, ' ').trim();
+          html = html.replace(/<title>.*?<\/title>/, `<title>${pageTitle}</title>`);
+          html = html.replace(/<meta name="description" content=".*?"/, `<meta name="description" content="${cleanDesc}"`);
+          html = html.replace(/<meta property="og:title" content=".*?"/, `<meta property="og:title" content="${pageTitle}"`);
+          html = html.replace(/<meta property="og:description" content=".*?"/, `<meta property="og:description" content="${cleanDesc}"`);
+        }
+      }
+
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+      return;
+    }
+
+    // 7. Not found
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('404 Not Found');
   }
 }

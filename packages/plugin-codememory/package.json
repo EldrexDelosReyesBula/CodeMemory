@@ -1,0 +1,48 @@
+{
+  "name": "@eldrex/plugin-codememory",
+  "version": "2.0.0",
+  "description": "Native DevDiff integration plugin for CodeMemory structural memory & architecture intelligence",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./bridge": {
+      "types": "./dist/bridge.d.ts",
+      "import": "./dist/bridge.js",
+      "default": "./dist/bridge.js"
+    },
+    "./unified-mcp": {
+      "types": "./dist/unified-mcp.d.ts",
+      "import": "./dist/unified-mcp.js",
+      "default": "./dist/unified-mcp.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "@eldrex/core": "^1.9.0",
+    "@eldrex/mcp": "^1.9.0",
+    "@eldrex/plugin-sdk": "^1.9.0",
+    "@modelcontextprotocol/sdk": "^1.6.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  },
+  "keywords": [
+    "devdiff",
+    "plugin",
+    "codememory",
+    "codebase-intelligence",
+    "ast",
+    "mcp"
+  ],
+  "author": "Eldrex Delos Reyes Bula",
+  "license": "MIT"
+}

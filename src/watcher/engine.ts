@@ -9,12 +9,14 @@ import { SkillsParser } from '../parser/skills.js';
 export interface WatcherOptions {
   rootDir?: string;
   debounceMs?: number;
+  quiet?: boolean;
   onEvent?: (eventType: string, filePath: string) => void;
 }
 
 export class FileWatcherEngine {
   private readonly rootDir: string;
   private readonly debounceMs: number;
+  private readonly quiet: boolean;
   private readonly db: CodeMemoryDB;
   private readonly extractor: CodeExtractor;
   private watcher: FSWatcher | null = null;
@@ -26,6 +28,7 @@ export class FileWatcherEngine {
     this.db = db;
     this.rootDir = options.rootDir || process.cwd();
     this.debounceMs = options.debounceMs || 100;
+    this.quiet = options.quiet ?? false;
     this.extractor = new CodeExtractor();
     this.onEventCallback = options.onEvent;
     this.ig = ignore();
@@ -154,7 +157,11 @@ export class FileWatcherEngine {
 
       return parsed.symbols.length;
     } catch (err: any) {
-      console.error(`[Error indexing ${normalizedRelPath}]:`, err?.message || err);
+      const msg = String(err?.message || err).toLowerCase();
+      // Suppress noisy transient lock / busy errors in console
+      if (!this.quiet && !msg.includes('busy') && !msg.includes('locked')) {
+        console.warn(`[CodeMemory Watcher] Warning indexing ${normalizedRelPath}:`, err?.message || err);
+      }
       return 0;
     }
   }

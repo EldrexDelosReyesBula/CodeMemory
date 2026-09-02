@@ -94,5 +94,36 @@ describe('Local Architecture Web Server', () => {
     const singleData = (await resSingle.json()) as any;
     expect(singleData.id).toBe(firstDoc.id);
   });
+
+  it('should serve root / with 200 OK and index.html', async () => {
+    const res = await fetch(`${serverUrl}/`);
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).toContain('CodeMemory');
+    expect(res.headers.get('content-type')).toContain('text/html');
+  });
+
+  it('should serve static assets with correct MIME types', async () => {
+    const resApp = await fetch(`${serverUrl}/app.js`);
+    expect(resApp.status).toBe(200);
+    expect(resApp.headers.get('content-type')).toContain('javascript');
+
+    const resStyle = await fetch(`${serverUrl}/style.css`);
+    expect(resStyle.status).toBe(200);
+    expect(resStyle.headers.get('content-type')).toContain('css');
+  });
+
+  it('should fallback to index.html for SPA routes', async () => {
+    const resSpa = await fetch(`${serverUrl}/docs/quick-start`);
+    expect(resSpa.status).toBe(200);
+    const text = await resSpa.text();
+    expect(text).toContain('CodeMemory');
+    expect(resSpa.headers.get('content-type')).toContain('text/html');
+  });
+
+  it('should return 404 for unknown api routes', async () => {
+    const res404 = await fetch(`${serverUrl}/api/unknown_endpoint`);
+    expect(res404.status).toBe(404);
+  });
 });
 

@@ -14,7 +14,7 @@ We take security vulnerabilities seriously.
 
 ### How to Report
 - **Do NOT create a public issue on GitHub.**
-- Email details to **security@codemem.dev** or use the GitHub Security Advisory private reporting tab.
+- Email details to **eldrexdelosreyesbula@gmail.com** or use the GitHub Security Advisory private reporting tab.
 - Please provide:
   1. A description of the vulnerability.
   2. Steps to reproduce or proof-of-concept code.

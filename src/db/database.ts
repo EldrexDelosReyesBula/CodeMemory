@@ -27,8 +27,9 @@ export class CodeMemoryDB {
   private db: DatabaseSync;
   private readonly dbPath: string;
 
-  constructor(options: DatabaseOptions = {}) {
-    if (options.inMemory) {
+  constructor(options: DatabaseOptions | string = {}) {
+    const opts: DatabaseOptions = typeof options === 'string' ? { dbPath: options } : options;
+    if (opts.inMemory) {
       this.db = new DatabaseSync(':memory:');
       this.dbPath = ':memory:';
     } else {
@@ -37,7 +38,7 @@ export class CodeMemoryDB {
       if (!fs.existsSync(dotDir)) {
         fs.mkdirSync(dotDir, { recursive: true });
       }
-      this.dbPath = options.dbPath || path.join(dotDir, 'codememory.db');
+      this.dbPath = opts.dbPath || path.join(dotDir, 'codememory.db');
       this.db = new DatabaseSync(this.dbPath);
     }
 
@@ -47,10 +48,37 @@ export class CodeMemoryDB {
 
   private configurePragmas(): void {
     if (this.dbPath !== ':memory:') {
-      this.db.exec('PRAGMA journal_mode = WAL;');
-      this.db.exec('PRAGMA synchronous = NORMAL;');
+      try {
+        this.db.exec('PRAGMA journal_mode = WAL;');
+        this.db.exec('PRAGMA synchronous = NORMAL;');
+        this.db.exec('PRAGMA busy_timeout = 5000;');
+      } catch {}
     }
-    this.db.exec('PRAGMA foreign_keys = ON;');
+    try {
+      this.db.exec('PRAGMA foreign_keys = ON;');
+    } catch {}
+  }
+
+  /**
+   * Execute an operation with exponential backoff retry on SQLite lock/busy contention.
+   */
+  public withRetry<T>(fn: () => T, maxAttempts = 5): T {
+    let attempts = 0;
+    while (true) {
+      try {
+        return fn();
+      } catch (err: any) {
+        const msg = String(err?.message || err).toLowerCase();
+        if ((msg.includes('busy') || msg.includes('locked')) && attempts < maxAttempts) {
+          attempts++;
+          const waitMs = Math.min(50 * Math.pow(2, attempts - 1), 500);
+          const start = Date.now();
+          while (Date.now() - start < waitMs) {}
+          continue;
+        }
+        throw err;
+      }
+    }
   }
 
   private initializeSchema(): void {
@@ -93,40 +121,42 @@ export class CodeMemoryDB {
    * Upsert file record and return its file ID.
    */
   public upsertFile(file: FileRecord): number {
-    const existing = this.db
-      .prepare('SELECT id FROM files WHERE path = ?')
-      .get(file.path) as { id: number } | undefined;
+    return this.withRetry(() => {
+      const existing = this.db
+        .prepare('SELECT id FROM files WHERE path = ?')
+        .get(file.path) as { id: number } | undefined;
 
-    if (existing) {
-      this.db
+      if (existing) {
+        this.db
+          .prepare(
+            `UPDATE files 
+             SET language = ?, last_modified = ?, size_bytes = ?, checksum = ?
+             WHERE id = ?`
+          )
+          .run(
+            file.language,
+            file.lastModified,
+            file.sizeBytes,
+            file.checksum,
+            existing.id
+          );
+        return Number(existing.id);
+      }
+
+      const res = this.db
         .prepare(
-          `UPDATE files 
-           SET language = ?, last_modified = ?, size_bytes = ?, checksum = ?
-           WHERE id = ?`
+          `INSERT INTO files (path, language, last_modified, size_bytes, checksum)
+           VALUES (?, ?, ?, ?, ?)`
         )
         .run(
+          file.path,
           file.language,
           file.lastModified,
           file.sizeBytes,
-          file.checksum,
-          existing.id
+          file.checksum
         );
-      return Number(existing.id);
-    }
-
-    const res = this.db
-      .prepare(
-        `INSERT INTO files (path, language, last_modified, size_bytes, checksum)
-         VALUES (?, ?, ?, ?, ?)`
-      )
-      .run(
-        file.path,
-        file.language,
-        file.lastModified,
-        file.sizeBytes,
-        file.checksum
-      );
-    return Number(res.lastInsertRowid);
+      return Number(res.lastInsertRowid);
+    });
   }
 
   public getFileByPath(filePath: string): FileRecord | null {
@@ -145,6 +175,10 @@ export class CodeMemoryDB {
     };
   }
 
+  public getFile(filePath: string): FileRecord | null {
+    return this.getFileByPath(filePath);
+  }
+
   public getAllFiles(): FileRecord[] {
     const rows = this.db.prepare('SELECT * FROM files ORDER BY path ASC').all() as any[];
     return rows.map((r) => ({
@@ -159,7 +193,9 @@ export class CodeMemoryDB {
   }
 
   public deleteFile(filePath: string): void {
-    this.db.prepare('DELETE FROM files WHERE path = ?').run(filePath);
+    this.withRetry(() => {
+      this.db.prepare('DELETE FROM files WHERE path = ?').run(filePath);
+    });
   }
 
   /**
@@ -170,57 +206,61 @@ export class CodeMemoryDB {
     symbols: Omit<SymbolRecord, 'fileId'>[],
     dependencies: Omit<DependencyRecord, 'sourceFileId'>[]
   ): void {
-    this.db.exec('BEGIN IMMEDIATE TRANSACTION;');
-    try {
-      this.db.prepare('DELETE FROM symbols WHERE file_id = ?').run(fileId);
-      this.db.prepare('DELETE FROM dependencies WHERE source_file_id = ?').run(fileId);
+    this.withRetry(() => {
+      this.db.exec('BEGIN IMMEDIATE TRANSACTION;');
+      try {
+        this.db.prepare('DELETE FROM symbols WHERE file_id = ?').run(fileId);
+        this.db.prepare('DELETE FROM dependencies WHERE source_file_id = ?').run(fileId);
 
-      const insertSymbol = this.db.prepare(
-        `INSERT INTO symbols (file_id, name, kind, line_start, line_end, column_start, column_end, signature, docstring, summary, visibility, is_exported, parent_symbol_id, checksum)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      );
-
-      for (const sym of symbols) {
-        insertSymbol.run(
-          fileId,
-          sym.name,
-          sym.kind,
-          sym.lineStart,
-          sym.lineEnd,
-          sym.columnStart || 0,
-          sym.columnEnd || 0,
-          sym.signature || null,
-          sym.docstring || null,
-          sym.summary || null,
-          sym.visibility || 'public',
-          sym.isExported ? 1 : 0,
-          sym.parentSymbolId || null,
-          sym.checksum || null
+        const insertSymbol = this.db.prepare(
+          `INSERT INTO symbols (file_id, name, kind, line_start, line_end, column_start, column_end, signature, docstring, summary, visibility, is_exported, parent_symbol_id, checksum)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         );
-      }
 
-      const insertDep = this.db.prepare(
-        `INSERT INTO dependencies (source_file_id, target_file_id, source_symbol_id, target_symbol_name, import_path, dep_type, file_level)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
-      );
+        for (const sym of symbols) {
+          insertSymbol.run(
+            fileId,
+            sym.name,
+            sym.kind,
+            sym.lineStart,
+            sym.lineEnd,
+            sym.columnStart || 0,
+            sym.columnEnd || 0,
+            sym.signature || null,
+            sym.docstring || null,
+            sym.summary || null,
+            sym.visibility || 'public',
+            sym.isExported ? 1 : 0,
+            sym.parentSymbolId || null,
+            sym.checksum || null
+          );
+        }
 
-      for (const dep of dependencies) {
-        insertDep.run(
-          fileId,
-          dep.targetFileId || null,
-          dep.sourceSymbolId || null,
-          dep.targetSymbolName,
-          dep.importPath,
-          dep.depType,
-          dep.fileLevel ? 1 : 0
+        const insertDep = this.db.prepare(
+          `INSERT INTO dependencies (source_file_id, target_file_id, source_symbol_id, target_symbol_name, import_path, dep_type, file_level)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
         );
-      }
 
-      this.db.exec('COMMIT;');
-    } catch (err) {
-      this.db.exec('ROLLBACK;');
-      throw err;
-    }
+        for (const dep of dependencies) {
+          insertDep.run(
+            fileId,
+            dep.targetFileId || null,
+            dep.sourceSymbolId || null,
+            dep.targetSymbolName,
+            dep.importPath,
+            dep.depType,
+            dep.fileLevel ? 1 : 0
+          );
+        }
+
+        this.db.exec('COMMIT;');
+      } catch (err) {
+        try {
+          this.db.exec('ROLLBACK;');
+        } catch {}
+        throw err;
+      }
+    });
   }
 
   /**
@@ -336,14 +376,16 @@ export class CodeMemoryDB {
 
   public getDependentsForFile(filePath: string): any[] {
     const sql = `
-      SELECT d.*, sf.path as source_path, tf.path as target_path
+      SELECT DISTINCT d.id, d.source_file_id, d.target_file_id, d.target_symbol_name, d.import_path, d.dep_type,
+             sf.path as source_path, tf.path as target_path
       FROM dependencies d
       JOIN files sf ON d.source_file_id = sf.id
       LEFT JOIN files tf ON d.target_file_id = tf.id
-      WHERE tf.path = ? OR d.import_path LIKE ?
+      WHERE tf.path = ? OR d.import_path = ? OR d.import_path LIKE ?
       ORDER BY sf.path ASC
     `;
-    return this.db.prepare(sql).all(filePath, `%${path.basename(filePath, path.extname(filePath))}%`);
+    const baseName = path.basename(filePath, path.extname(filePath));
+    return this.db.prepare(sql).all(filePath, filePath, `%/` + baseName);
   }
 
   public getDependentsForSymbol(symbolName: string): any[] {
@@ -358,21 +400,23 @@ export class CodeMemoryDB {
   }
 
   public recordChange(change: ChangeRecord): void {
-    this.db
-      .prepare(
-        `INSERT INTO changes (file_id, path, event_type, commit_hash, git_author, git_message, diff_summary, impact_score)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        change.fileId || null,
-        change.path,
-        change.eventType,
-        change.commitHash || null,
-        change.gitAuthor || null,
-        change.gitMessage || null,
-        change.diffSummary || null,
-        change.impactScore || 0.0
-      );
+    this.withRetry(() => {
+      this.db
+        .prepare(
+          `INSERT INTO changes (file_id, path, event_type, commit_hash, git_author, git_message, diff_summary, impact_score)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          change.fileId || null,
+          change.path,
+          change.eventType,
+          change.commitHash || null,
+          change.gitAuthor || null,
+          change.gitMessage || null,
+          change.diffSummary || null,
+          change.impactScore || 0.0
+        );
+    });
   }
 
   public getRecentChanges(limit: number = 20): ChangeRecord[] {
@@ -468,19 +512,21 @@ export class CodeMemoryDB {
   // --- Domain Model: Extensible Annotations & Relationships ---
 
   public addAnnotation(annotation: AnnotationRecord): void {
-    this.db
-      .prepare(
-        `INSERT OR REPLACE INTO annotations (entity_type, entity_id, key, value, source, confidence, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
-      )
-      .run(
-        annotation.entityType,
-        annotation.entityId,
-        annotation.key,
-        annotation.value,
-        annotation.source,
-        annotation.confidence || null
-      );
+    this.withRetry(() => {
+      this.db
+        .prepare(
+          `INSERT OR REPLACE INTO annotations (entity_type, entity_id, key, value, source, confidence, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+        )
+        .run(
+          annotation.entityType,
+          annotation.entityId,
+          annotation.key,
+          annotation.value,
+          annotation.source,
+          annotation.confidence || null
+        );
+    });
   }
 
   public getAnnotations(entityType: EntityType, entityId: number): AnnotationRecord[] {
@@ -507,20 +553,22 @@ export class CodeMemoryDB {
   }
 
   public addRelationship(rel: RelationshipRecord): void {
-    this.db
-      .prepare(
-        `INSERT INTO relationships (source_entity_type, source_entity_id, target_entity_type, target_entity_id, relationship_type, source, metadata)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        rel.sourceEntityType,
-        rel.sourceEntityId,
-        rel.targetEntityType,
-        rel.targetEntityId,
-        rel.relationshipType,
-        rel.source,
-        rel.metadata || null
-      );
+    this.withRetry(() => {
+      this.db
+        .prepare(
+          `INSERT INTO relationships (source_entity_type, source_entity_id, target_entity_type, target_entity_id, relationship_type, source, metadata)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          rel.sourceEntityType,
+          rel.sourceEntityId,
+          rel.targetEntityType,
+          rel.targetEntityId,
+          rel.relationshipType,
+          rel.source,
+          rel.metadata || null
+        );
+    });
   }
 
   public getRelationships(entityType: EntityType, entityId: number): RelationshipRecord[] {
@@ -545,33 +593,37 @@ export class CodeMemoryDB {
   }
 
   public removePluginData(pluginSource: string): { annotationsRemoved: number; relationshipsRemoved: number } {
-    const resAnn = this.db.prepare('DELETE FROM annotations WHERE source = ?').run(pluginSource);
-    const resRel = this.db.prepare('DELETE FROM relationships WHERE source = ?').run(pluginSource);
-    return {
-      annotationsRemoved: Number(resAnn.changes),
-      relationshipsRemoved: Number(resRel.changes),
-    };
+    return this.withRetry(() => {
+      const resAnn = this.db.prepare('DELETE FROM annotations WHERE source = ?').run(pluginSource);
+      const resRel = this.db.prepare('DELETE FROM relationships WHERE source = ?').run(pluginSource);
+      return {
+        annotationsRemoved: Number(resAnn.changes),
+        relationshipsRemoved: Number(resRel.changes),
+      };
+    });
   }
 
   // --- Skills & Agent Instructions Domain Store ---
 
   public upsertSkillInstruction(instruction: SkillInstructionRecord): void {
-    const cmdStr = instruction.commands ? JSON.stringify(instruction.commands) : null;
-    this.db
-      .prepare(
-        `INSERT OR REPLACE INTO skill_instructions (file_path, tool_target, section, heading_level, content, commands, line_start, line_end, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
-      )
-      .run(
-        instruction.filePath,
-        instruction.toolTarget || 'generic',
-        instruction.section,
-        instruction.headingLevel || 2,
-        instruction.content,
-        cmdStr,
-        instruction.lineStart || 1,
-        instruction.lineEnd || 1
-      );
+    this.withRetry(() => {
+      const cmdStr = instruction.commands ? JSON.stringify(instruction.commands) : null;
+      this.db
+        .prepare(
+          `INSERT OR REPLACE INTO skill_instructions (file_path, tool_target, section, heading_level, content, commands, line_start, line_end, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+        )
+        .run(
+          instruction.filePath,
+          instruction.toolTarget || 'generic',
+          instruction.section,
+          instruction.headingLevel || 2,
+          instruction.content,
+          cmdStr,
+          instruction.lineStart || 1,
+          instruction.lineEnd || 1
+        );
+    });
   }
 
   public getSkillInstructions(filePath?: string): SkillInstructionRecord[] {

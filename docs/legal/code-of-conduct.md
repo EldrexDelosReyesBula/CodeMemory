@@ -1,56 +1,59 @@
-# Contributor Covenant Code of Conduct
+# Code of Conduct
+
+**CodeMemory Community Standards — v2.0.0**
+
+---
 
 ## Our Pledge
 
-We as members, contributors, and leaders pledge to make participation in our
-community a harassment-free experience for everyone, regardless of age, body
-size, visible or invisible disability, ethnicity, sex characteristics, gender
-identity and expression, level of experience, education, socio-economic status,
-nationality, personal appearance, race, caste, color, religion, or sexual
-identity and orientation.
+CodeMemory is an open engineering project built by developers, for developers. We are committed to maintaining a community where every contributor — regardless of experience level, background, or identity — can participate with confidence and mutual respect.
 
-We pledge to act and interact in ways that contribute to an open, welcoming,
-diverse, inclusive, and healthy community.
+We pledge to make participation in this project a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.
 
-## Our Standards
+---
 
-Examples of behavior that contributes to a positive environment for our
-community include:
+## Community Standards
 
-* Demonstrating empathy and kindness toward other people
-* Being respectful of differing opinions, viewpoints, and experiences
-* Giving and gracefully accepting constructive feedback
-* Accepting responsibility and apologizing to those affected by our mistakes,
-  and learning from the experience
-* Focusing on what is best not just for us as individuals, but for the
-  overall community
+### Behavior We Encourage
 
-Examples of unacceptable behavior include:
+- **Precision and clarity** — Write clear bug reports, detailed PR descriptions, and focused code reviews
+- **Intellectual humility** — Acknowledge when you're wrong; welcome when you're corrected
+- **Constructive feedback** — Critique ideas and implementations, not people
+- **Collaboration over competition** — Improve the tool together; credit contributions generously
+- **Patience with newcomers** — Everyone was new to AST parsing once
 
-* The use of sexualized language or imagery, and sexual attention or advances of
-  any kind
-* Trolling, insulting or derogatory comments, and personal or political attacks
-* Public or private harassment
-* Publishing others' private information, such as a physical or email
-  address, without their explicit permission
-* Other conduct which could reasonably be considered inappropriate in a
-  professional setting
+### Behavior That Will Not Be Tolerated
 
-## Enforcement Responsibilities
+- Harassment, insults, or derogatory comments in any project space (GitHub Issues, PRs, Discussions, email)
+- Dismissing contributions based on a person's experience level or background
+- Publishing others' private information (email addresses, personal details) without explicit consent
+- Sustained disruption of code review, issue discussions, or community threads
+- Any conduct that would be considered inappropriate in a professional engineering environment
 
-Community leaders are responsible for clarifying and enforcing our standards of
-acceptable behavior and will take appropriate and fair corrective action in
-response to any behavior that they deem inappropriate, threatening, offensive,
-or harmful.
+---
 
 ## Scope
 
-This Code of Conduct applies within all community spaces, including the GitHub
-repository, issue tracker, pull requests, discussions, and in any private
-communications between community members representing the project.
+This Code of Conduct applies to all CodeMemory community spaces:
+
+- The [GitHub repository](https://github.com/EldrexDelosReyesBula/CodeMemory) — Issues, Pull Requests, Discussions, and code comments
+- Direct communications between community members representing or acting on behalf of this project
+- Any third-party platforms (Discord, forums, conference talks) where contributors represent the CodeMemory project
+
+---
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project team at **conduct@codemem.dev**. All complaints will be
-reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainer:
+
+- **Email:** eldrexdelosreyesbula@gmail.com
+
+All reports will be reviewed promptly, treated with confidentiality, and handled with fairness. The reporter's identity will not be disclosed without their consent.
+
+Violations may result in a warning, temporary restriction from community spaces, or a permanent ban from the project depending on severity and pattern of behavior.
+
+---
+
+## Attribution
+
+This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1.

@@ -9,7 +9,6 @@ import {
   h4,
   p,
   span,
-  button,
   input,
   header as Header,
   nav as Nav,
@@ -20,15 +19,20 @@ import {
 } from './cairn.js';
 import { EMBEDDED_DOCS } from './docs-data.js';
 
+function button(arg1, ...rest) {
+  if (rest.length > 0 && typeof rest[0] === 'object' && !Array.isArray(rest[0]) && !rest[0]?._isCairnState && !rest[0]?.nodeType) {
+    const props = rest[0];
+    const children = Array.isArray(arg1) ? arg1 : [arg1];
+    return h('button', props, ...children, ...rest.slice(1));
+  }
+  if (typeof arg1 === 'object' && !Array.isArray(arg1) && !arg1?._isCairnState && !arg1?.nodeType) {
+    return h('button', arg1, ...rest);
+  }
+  return h('button', {}, arg1, ...rest);
+}
+
 const img = (...args) => h('img', ...args);
 const a = (...args) => h('a', ...args);
-
-// --- Environment Detection ---
-// Local CodeMemory Server only runs when served on port 3737 (via `codememory web`)
-const isLocalCodeMemoryServer = typeof window !== 'undefined' && (
-  window.location.port === '3737'
-);
-const isLocalEnvironment = isLocalCodeMemoryServer;
 
 // --- Robust SVG Icon Engine ---
 function createSvgIcon(pathD, size = 18, strokeWidth = 2) {
@@ -79,12 +83,15 @@ const Icons = {
   grid: (size = 16) => createSvgIcon(['M3 3h7v7H3z', 'M14 3h7v7h-7z', 'M14 14h7v7h-7z', 'M3 14h7v7H3z'], size),
   filter: (size = 16) => createSvgIcon('M22 3H2l8 9.46V19l4 2v-8.54L22 3z', size),
   settings: (size = 16) => createSvgIcon(['M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z'], size),
+  gitCommit: (size = 18) => createSvgIcon(['M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z', 'M2 12h4', 'M18 12h4'], size),
+  play: (size = 16) => createSvgIcon('M5 3l14 9-14 9V3z', size),
 };
 
 // --- Documentation Catalog ---
 const DOC_ENTRIES_CATALOG = [
   { id: 'quick-start', title: 'Quick Start Guide', category: 'Getting Started', path: 'docs/getting-started/quick-start.md' },
   { id: 'installation', title: 'Installation Guide', category: 'Getting Started', path: 'docs/getting-started/installation.md' },
+  { id: 'devdiff-integration', title: 'DevDiff Integration Guide', category: 'How-To Guides', path: 'docs/how-to/devdiff-integration.md' },
   { id: 'token-optimization', title: 'Optimize AI Token Usage', category: 'How-To Guides', path: 'docs/how-to/token-optimization.md' },
   { id: 'local-ollama-setup', title: 'Local Embeddings with Ollama', category: 'How-To Guides', path: 'docs/how-to/local-ollama-setup.md' },
   { id: 'ide-copilot-setup', title: 'Connect VS Code & Cursor', category: 'How-To Guides', path: 'docs/how-to/ide-copilot-setup.md' },
@@ -102,12 +109,11 @@ const DOC_ENTRIES_CATALOG = [
   { id: 'contributing', title: 'Contributing Guide', category: 'Legal & Privacy', path: 'docs/legal/contributing.md' },
   { id: 'code-of-conduct', title: 'Code of Conduct', category: 'Legal & Privacy', path: 'docs/legal/code-of-conduct.md' },
   { id: 'license', title: 'MIT License', category: 'Legal & Privacy', path: 'docs/legal/license.md' },
-  { id: 'readme', title: 'CodeMemory Overview', category: 'Project Codex', path: 'README.md' },
-  { id: 'skills', title: 'Project SKILLS.md', category: 'Project Codex', path: 'SKILLS.md' }
+  { id: 'changelog', title: 'Release Changelog', category: 'Releases', path: 'CHANGELOG.md' }
 ];
 
 // --- Reactive State ---
-const activeTab = state('home'); // 'home' | 'explorer' | 'docs'
+const activeTab = state('home');
 const isMobileMenuOpen = state(false);
 const isMobileDocsMenuOpen = state(false);
 const isSearchModalOpen = state(false);
@@ -132,25 +138,15 @@ for (const d of initialDocs) {
   }
 }
 
-// --- Architecture & Memory Explorer State (Active Only on CodeMemory CLI Server port 3737) ---
-const archNodes = state([]);
-const archEdges = state([]);
-const archMetrics = state(null);
-const recentChanges = state([]);
-const hotspotsList = state([]);
-const timelineHistory = state([]);
-const selectedTimelineDayIndex = state(0);
-const explorerDisplayMode = state('flow'); // 'flow' | 'grid'
-const selectedNode = state(null);
-const selectedNodeDetails = state(null);
-const archSearchQuery = state('');
-const archLanguageFilter = state('all');
-const archHotspotFilter = state(false);
-const contextTaskPrompt = state('');
-const contextBudget = state('3500');
-const contextResult = state(null);
-const isGeneratingContext = state(false);
-const contextCopied = state(false);
+// --- Environment & Backend Connectivity State ---
+const isBackendConnected = state(false);
+const isLocalEnvironment = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname === '0.0.0.0' ||
+  window.location.hostname === '[::1]'
+);
+const isLocalCodeMemoryServer = isLocalEnvironment;
 
 // Asynchronously load markdown content
 async function fetchDocumentContent(doc) {
@@ -162,8 +158,7 @@ async function fetchDocumentContent(doc) {
     return docContentCache[doc.id];
   }
 
-  // 1. Try fetching from /api/docs?id= if available
-  if (isLocalCodeMemoryServer) {
+  if (isBackendConnected.value) {
     try {
       const apiRes = await fetch(`/api/docs?id=${encodeURIComponent(doc.id)}`);
       if (apiRes.ok) {
@@ -174,7 +169,7 @@ async function fetchDocumentContent(doc) {
           return data.content;
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   return `# ${doc.title}\n\nDocumentation content loaded.`;
@@ -184,51 +179,69 @@ function updateDocContentInState(id, content) {
   docsList.value = docsList.value.map((d) => (d.id === id ? { ...d, content } : d));
 }
 
-// Fetch live architecture graph and codebase memory (LOCAL ONLY)
+// Fetch live architecture graph and codebase memory
 async function loadArchitectureMemory() {
-  if (!isLocalEnvironment) return;
-
   try {
-    const res = await fetch('/api/architecture');
-    if (res.ok) {
-      const data = await res.json();
-      if (data.nodes) archNodes.value = data.nodes;
-      if (data.edges) archEdges.value = data.edges;
-      if (data.metrics) archMetrics.value = data.metrics;
-    }
-  } catch (e) {}
+    let res = null;
+    try {
+      res = await fetch('/api/architecture');
+    } catch { }
 
-  try {
-    const changesRes = await fetch('/api/changes?limit=40');
-    if (changesRes.ok) {
-      const data = await changesRes.json();
-      if (Array.isArray(data)) recentChanges.value = data;
-    }
-  } catch (e) {}
-
-  try {
-    const hotRes = await fetch('/api/hotspots?limit=15');
-    if (hotRes.ok) {
-      const data = await hotRes.json();
-      if (Array.isArray(data)) hotspotsList.value = data;
-    }
-  } catch (e) {}
-
-  try {
-    const timeRes = await fetch('/api/timeline');
-    if (timeRes.ok) {
-      const data = await timeRes.json();
-      if (data.timeline && Array.isArray(data.timeline)) {
-        timelineHistory.value = data.timeline;
+    if (!res || !res.ok) {
+      if (typeof window !== 'undefined' && window.location.port !== '3737') {
+        try {
+          const altRes = await fetch('http://127.0.0.1:3737/api/architecture', { mode: 'cors' });
+          if (altRes.ok) {
+            res = altRes;
+          }
+        } catch { }
       }
     }
-  } catch (e) {}
+
+    if (!res || !res.ok) {
+      isBackendConnected.value = false;
+      return;
+    }
+
+    const data = await res.json();
+    isBackendConnected.value = true;
+    if (data.nodes) archNodes.value = data.nodes;
+    if (data.edges) archEdges.value = data.edges;
+    if (data.metrics) archMetrics.value = data.metrics;
+
+    // Load auxiliary endpoints only when backend confirmed active
+    try {
+      const changesRes = await fetch('/api/changes?limit=40');
+      if (changesRes.ok) {
+        const cdata = await changesRes.json();
+        if (Array.isArray(cdata)) recentChanges.value = cdata;
+      }
+    } catch (e) { }
+
+    try {
+      const hotRes = await fetch('/api/hotspots?limit=15');
+      if (hotRes.ok) {
+        const hdata = await hotRes.json();
+        if (Array.isArray(hdata)) hotspotsList.value = hdata;
+      }
+    } catch (e) { }
+
+    try {
+      const timeRes = await fetch('/api/timeline');
+      if (timeRes.ok) {
+        const tdata = await timeRes.json();
+        if (tdata.timeline && Array.isArray(tdata.timeline)) {
+          timelineHistory.value = tdata.timeline;
+        }
+      }
+    } catch (e) { }
+  } catch (e) {
+    isBackendConnected.value = false;
+  }
 }
 
-// Inspect a specific file node in depth (LOCAL ONLY)
+// Inspect a specific file node in depth
 async function inspectNode(node) {
-  if (!isLocalEnvironment) return;
-
   if (typeof node === 'string') {
     const found = archNodes.value.find((n) => n.path === node || n.id === node);
     if (found) {
@@ -244,6 +257,18 @@ async function inspectNode(node) {
   const shortName = cleanPath.split('/').pop() || cleanPath;
   contextTaskPrompt.value = `Refactor and test ${shortName}`;
   contextResult.value = null;
+
+  if (!isBackendConnected.value) {
+    // Offline / Demo mode node details
+    selectedNodeDetails.value = {
+      dependencies: [],
+      dependents: [],
+      symbols: node.symbols || [],
+      annotations: node.annotations || [],
+      loading: false,
+    };
+    return;
+  }
 
   try {
     const [depRes, symRes, annoRes] = await Promise.all([
@@ -274,9 +299,17 @@ async function inspectNode(node) {
   }
 }
 
-// Generate test AI Context slice (LOCAL ONLY)
+// Generate test AI Context slice
 async function generateContextSlice() {
-  if (!isLocalEnvironment) return;
+  if (!isBackendConnected.value) {
+    contextResult.value = {
+      task: contextTaskPrompt.value,
+      budget: Number(contextBudget.value),
+      tokensUsed: 420,
+      contextSlice: `// [Demo Context Slice]\n// File: ${selectedNode.value ? selectedNode.value.path : 'src/index.ts'}\n// Connect local server via \`codememory web\` for live context generation.\n\nexport function example() {\n  return "Live CodeMemory context slice";\n}`,
+    };
+    return;
+  }
 
   isGeneratingContext.value = true;
   try {
@@ -293,9 +326,36 @@ async function generateContextSlice() {
   }
 }
 
-// Load initial documentation
+let activeSseInstance = null;
+
+function setupSSE() {
+  if (typeof window === 'undefined' || !window.EventSource || !isBackendConnected.value) return;
+  if (activeSseInstance) {
+    try { activeSseInstance.close(); } catch (e) { }
+  }
+
+  try {
+    const sse = new EventSource('/ws/updates');
+    activeSseInstance = sse;
+    sse.onmessage = () => {
+      try {
+        loadArchitectureMemory();
+      } catch (e) { }
+    };
+    sse.onerror = () => {
+      // Close on error/404 to avoid browser retry loops
+      sse.close();
+      activeSseInstance = null;
+    };
+  } catch (e) { }
+}
+
+// Load initial documentation & check backend connectivity
 async function loadInitialData() {
-  if (isLocalEnvironment) {
+  await loadArchitectureMemory();
+
+  if (isBackendConnected.value) {
+    setupSSE();
     try {
       const docsRes = await fetch('/api/docs');
       if (docsRes.ok) {
@@ -309,22 +369,7 @@ async function loadInitialData() {
           }
         }
       }
-    } catch (err) {}
-
-    loadArchitectureMemory();
-
-    // Setup Server-Sent Events (SSE) for live watcher changes
-    if (typeof window !== 'undefined' && window.EventSource) {
-      try {
-        const sse = new EventSource('/ws/updates');
-        sse.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data);
-            loadArchitectureMemory();
-          } catch (e) {}
-        };
-      } catch (e) {}
-    }
+    } catch (err) { }
   }
 
   const current = docsList.value.find((d) => d.id === selectedDocId.value) || docsList.value[0];
@@ -336,21 +381,25 @@ async function loadInitialData() {
 loadInitialData();
 
 // Check URL hash on initial load
-if (typeof window !== 'undefined' && window.location && window.location.hash) {
-  const hash = window.location.hash.replace('#', '');
+function syncTabWithUrl() {
+  if (typeof window === 'undefined' || !window.location) return;
+  const hash = (window.location.hash || '').replace('#', '');
   if (hash === 'home' || hash === 'docs') {
     activeTab.value = hash;
   } else if (hash === 'explorer') {
-    if (isLocalEnvironment) {
-      activeTab.value = 'explorer';
-    } else {
-      activeTab.value = 'home';
-      isLocalLaunchModalOpen.value = true;
-    }
+    activeTab.value = 'explorer';
   } else if (DOC_ENTRIES_CATALOG.some((d) => d.id === hash)) {
     activeTab.value = 'docs';
     selectedDocId.value = hash;
+  } else {
+    activeTab.value = 'home';
   }
+}
+
+syncTabWithUrl();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('hashchange', syncTabWithUrl);
 }
 
 // Setup Reading Progress Bar & ScrollSpy
@@ -406,9 +455,10 @@ const filteredDocs = computed(() => {
   );
 });
 
-// Filtered Architecture Nodes computed signal (Local Only)
+// Filtered Architecture Nodes computed signal
 const filteredArchNodes = computed(() => {
-  let list = archNodes.value;
+  let list = isBackendConnected.value ? archNodes.value : [];
+
   const q = archSearchQuery.value.toLowerCase().trim();
   const lang = archLanguageFilter.value;
   const hotOnly = archHotspotFilter.value;
@@ -563,44 +613,59 @@ function renderHeader() {
       }),
       div(
         { class: 'brand-title' },
-        'CodeMemory',
-        span({ class: 'badge' }, 'v1.0.0')
+        'CodeMemory'
       )
     ),
     Nav(
       { class: 'main-nav' },
-      button([Icons.home(16), 'Home'], {
+      button(['Overview'], {
         variant: 'custom',
         class: () => (activeTab.value === 'home' ? 'nav-link-btn active' : 'nav-link-btn'),
         onclick: () => navigateTo('home'),
       }),
-      // Only show Architecture Explorer in local environment
-      isLocalEnvironment
-        ? button([Icons.network(16), 'Architecture Explorer'], {
-            variant: 'custom',
-            class: () => (activeTab.value === 'explorer' ? 'nav-link-btn active' : 'nav-link-btn'),
-            onclick: () => navigateTo('explorer'),
-          })
-        : null,
-      button([Icons.book(16), 'Documentation'], {
+      button(['Documentation'], {
         variant: 'custom',
-        class: () => (activeTab.value === 'docs' ? 'nav-link-btn active' : 'nav-link-btn'),
-        onclick: () => navigateTo('docs'),
+        class: () => (activeTab.value === 'docs' && selectedDocId.value !== 'changelog' ? 'nav-link-btn active' : 'nav-link-btn'),
+        onclick: () => navigateTo('docs', 'quick-start'),
+      }),
+      isLocalEnvironment
+        ? button(['Web Explorer'], {
+          variant: 'custom',
+          class: () => (activeTab.value === 'explorer' ? 'nav-link-btn active' : 'nav-link-btn'),
+          onclick: () => navigateTo('explorer'),
+        })
+        : button(['Explorer'], {
+          variant: 'custom',
+          class: () => (activeTab.value === 'explorer' ? 'nav-link-btn active' : 'nav-link-btn'),
+          onclick: () => { isLocalLaunchModalOpen.value = true; },
+        }),
+      button(['Changelog'], {
+        variant: 'custom',
+        class: () => (activeTab.value === 'docs' && selectedDocId.value === 'changelog' ? 'nav-link-btn active' : 'nav-link-btn'),
+        onclick: () => navigateTo('docs', 'changelog'),
       })
     ),
     div(
-      { class: 'nav-actions' },
+      { class: 'header-actions' },
       button(
         [
           Icons.search(15),
-          span({ class: 'search-trigger-text' }, 'Search docs...'),
+          span({ class: 'search-trigger-text' }, 'Search'),
           span({ class: 'search-kbd' }, '⌘K'),
         ],
         {
           variant: 'custom',
           class: 'search-trigger-btn',
-          title: 'Search documentation (⌘K / Ctrl+K)',
+          title: 'Search documentation',
           onclick: () => (isSearchModalOpen.value = true),
+        }
+      ),
+      button(
+        ['Get Started →'],
+        {
+          variant: 'custom',
+          class: 'header-cta-btn',
+          onclick: () => navigateTo('docs', 'quick-start'),
         }
       ),
       a(
@@ -608,10 +673,10 @@ function renderHeader() {
           href: 'https://github.com/EldrexDelosReyesBula/CodeMemory',
           target: '_blank',
           rel: 'noopener noreferrer',
-          class: 'github-btn',
-          title: 'View source code on GitHub',
+          class: 'header-icon-btn',
+          title: 'GitHub Repository',
         },
-        [Icons.github(16), span({ class: 'github-btn-text' }, 'GitHub')]
+        Icons.github(18)
       ),
       button(
         () => (isMobileMenuOpen.value ? Icons.close(20) : Icons.menu(20)),
@@ -629,24 +694,34 @@ function renderHeader() {
 function renderMobileDrawer() {
   return div(
     { class: () => (isMobileMenuOpen.value ? 'mobile-nav-drawer open' : 'mobile-nav-drawer') },
-    button([Icons.home(18), 'Home'], {
+    button([Icons.home(18), 'Overview'], {
       variant: 'custom',
       class: () => (activeTab.value === 'home' ? 'nav-link-btn active' : 'nav-link-btn'),
       onclick: () => navigateTo('home'),
     }),
-    isLocalEnvironment
-      ? button([Icons.network(18), 'Architecture Explorer'], {
-          variant: 'custom',
-          class: () => (activeTab.value === 'explorer' ? 'nav-link-btn active' : 'nav-link-btn'),
-          onclick: () => navigateTo('explorer'),
-        })
-      : null,
-    button([Icons.book(18), 'Documentation Hub'], {
+    button([Icons.book(18), 'Documentation'], {
       variant: 'custom',
-      class: () => (activeTab.value === 'docs' ? 'nav-link-btn active' : 'nav-link-btn'),
-      onclick: () => navigateTo('docs'),
+      class: () => (activeTab.value === 'docs' && selectedDocId.value !== 'changelog' ? 'nav-link-btn active' : 'nav-link-btn'),
+      onclick: () => navigateTo('docs', 'quick-start'),
     }),
-    button([Icons.search(18), 'Search Docs & Guides (⌘K)'], {
+    button([Icons.network(18), 'Web Explorer'], {
+      variant: 'custom',
+      class: () => (activeTab.value === 'explorer' ? 'nav-link-btn active' : 'nav-link-btn'),
+      onclick: () => {
+        if (isLocalEnvironment) {
+          navigateTo('explorer');
+        } else {
+          isMobileMenuOpen.value = false;
+          isLocalLaunchModalOpen.value = true;
+        }
+      },
+    }),
+    button([Icons.activity(18), 'Changelog'], {
+      variant: 'custom',
+      class: () => (activeTab.value === 'docs' && selectedDocId.value === 'changelog' ? 'nav-link-btn active' : 'nav-link-btn'),
+      onclick: () => navigateTo('docs', 'changelog'),
+    }),
+    button([Icons.search(18), 'Search'], {
       variant: 'custom',
       class: 'nav-link-btn',
       onclick: () => {
@@ -717,20 +792,26 @@ function renderLocalLaunchModal() {
             div({ class: 'feat-item' }, Icons.check(14), span('Zero telemetry — strictly stored in local SQLite WAL database'))
           ),
           div(
-            { style: { display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' } },
-            button(['Browse Documentation', Icons.arrowRight(14)], {
-              variant: 'custom',
-              class: 'btn-secondary',
-              onclick: () => {
-                isLocalLaunchModalOpen.value = false;
-                navigateTo('docs', 'quick-start');
+            { style: { display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' } },
+            button(
+              {
+                variant: 'custom',
+                class: 'btn-secondary-pill',
+                onclick: () => {
+                  isLocalLaunchModalOpen.value = false;
+                  navigateTo('docs', 'quick-start');
+                },
               },
-            }),
-            button(['Got It', Icons.check(14)], {
-              variant: 'custom',
-              class: 'btn-primary',
-              onclick: () => (isLocalLaunchModalOpen.value = false),
-            })
+              ['Browse Documentation ', Icons.arrowRight(14)]
+            ),
+            button(
+              {
+                variant: 'custom',
+                class: 'btn-primary-pill',
+                onclick: () => (isLocalLaunchModalOpen.value = false),
+              },
+              ['Got It ', Icons.check(14)]
+            )
           )
         )
       )
@@ -819,7 +900,11 @@ function renderSearchModal() {
               div(
                 {
                   class: 'vp-search-result-item',
-                  onclick: () => navigateTo('docs', item.id),
+                  onclick: () => {
+                    isSearchModalOpen.value = false;
+                    globalSearchQuery.value = '';
+                    navigateTo('docs', item.id);
+                  },
                 },
                 div(
                   { class: 'vp-search-result-header' },
@@ -841,91 +926,105 @@ function renderSearchModal() {
 function renderLandingPage() {
   return div(
     { class: 'landing-container' },
+    div(
+      { class: 'landing-hero-edge-bg' },
+      img({
+        src: './assets/codemem-hero.gif',
+        alt: 'CodeMemory Hero Background Animation',
+        class: 'hero-edge-gif',
+        onerror: (e) => {
+          if (!e.target.dataset.tried) {
+            e.target.dataset.tried = 'true';
+            e.target.src = '../assets/codemem-hero.gif';
+          }
+        },
+      }),
+      div({ class: 'hero-edge-overlay' })
+    ),
     div({ class: 'landing-bg-glow' }),
 
     // Hero Section
     div(
       { class: 'landing-hero' },
-      div({ class: 'hero-pill' }, [Icons.zap(15), 'Local-First Context Engine for AI Coding Agents']),
-      h1(
-        { class: 'hero-title' },
-        'The Persistent Memory Layer ',
-        span({ class: 'gradient-text' }, 'for Your Codebase')
-      ),
-      p(
-        { class: 'hero-subtitle' },
-        'CodeMemory watches your repository in real-time, indexes multi-language AST symbols & dependency graphs, and serves change-aware context slices directly to AI agents over native MCP.'
-      ),
+      // Floating Brand Icon (Matching CairnJS floating pebble stack style)
       div(
-        { class: 'hero-actions' },
-        button(['Get Started', Icons.arrowRight(16)], {
-          variant: 'custom',
-          class: 'btn-primary',
-          onclick: () => navigateTo('docs', 'quick-start'),
-        }),
-        button(['Architecture Overview', Icons.network(16)], {
-          variant: 'custom',
-          class: 'btn-secondary',
-          onclick: () => {
-            if (isLocalEnvironment) {
-              navigateTo('explorer');
-            } else {
-              isLocalLaunchModalOpen.value = true;
+        { class: 'hero-floating-icon-wrap' },
+        img({
+          src: './assets/codememory-logo.png',
+          alt: 'CodeMemory Floating Icon',
+          class: 'hero-floating-icon',
+          onerror: (e) => {
+            if (!e.target.dataset.tried) {
+              e.target.dataset.tried = 'true';
+              e.target.src = '../assets/codememory-logo.png';
             }
           },
-        }),
-        div(
+        })
+      ),
+
+      // Live Pill Badge
+      div(
+        {
+          class: 'hero-pill',
+          onclick: () => navigateTo('docs', 'changelog'),
+          style: { cursor: 'pointer' },
+        },
+        span({ class: 'hero-pill-dot' }),
+        span({ class: 'hero-pill-ver' }, 'v2.0.0 Architecture'),
+        span({ class: 'hero-pill-sep' }, '•'),
+        span({ class: 'hero-pill-action' }, ["Sub-100ms Incremental Engine →"])
+      ),
+
+      // Main Headline
+      h1(
+        { class: 'hero-title' },
+        'AI coding assistants start every session blind. ',
+        span(
+          { class: 'gradient-text' },
+          'CodeMemory gives them instant architectural recall.'
+        )
+      ),
+
+      // Subtitle
+      p(
+        { class: 'hero-subtitle' },
+        'Stop burning tokens dumping entire directories into LLM prompts. CodeMemory indexes your codebase topology into local SQLite memory — delivering surgical AST symbol slices, caller graphs, and live change awareness to Cursor, Claude Desktop, Copilot, and Antigravity with zero cloud telemetry.'
+      ),
+
+      // Install Bar with Copy
+      div(
+        {
+          class: 'hero-install-bar',
+          onclick: () => copyToClipboard('npx @eldrex/codememory init', 'Command copied!'),
+        },
+        span({ class: 'install-prompt' }, '$'),
+        span({ class: 'install-cmd' }, 'npx @eldrex/codememory init'),
+        button(
           {
-            class: 'install-command-badge',
-            onclick: () => copyToClipboard('npx @eldrex/codememory init', 'Command copied!'),
+            class: () => (copyNotice.value ? 'install-copy-btn copied' : 'install-copy-btn'),
+            type: 'button',
+            onclick: (e) => {
+              if (e && e.stopPropagation) e.stopPropagation();
+              copyToClipboard('npx @eldrex/codememory init', 'Command copied!');
+            },
           },
-          span({ style: { color: '#64748b' } }, '$'),
-          'npx @eldrex/codememory init',
-          span({ style: { display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#38bdf8' } }, () =>
-            copyNotice.value ? [Icons.check(14), 'Copied'] : [Icons.copy(14)]
-          )
+          () => (copyNotice.value ? 'Copied!' : 'Copy')
         )
       ),
 
-      // Terminal Preview
+      // Hero Actions
       div(
-        { class: 'terminal-window' },
-        div(
-          { class: 'terminal-header' },
-          div(
-            { class: 'terminal-dots' },
-            span({ class: 'dot red' }),
-            span({ class: 'dot yellow' }),
-            span({ class: 'dot green' })
-          ),
-          span({ class: 'terminal-title' }, [Icons.terminal(14), '@eldrex/codememory — mcp context query'])
-        ),
-        div(
-          { class: 'terminal-body' },
-          div({ style: { color: '#64748b' } }, '$ codememory context --task "Refactor Stripe webhook handler" --budget 4000'),
-          div({ style: { color: '#38bdf8', marginTop: '0.5rem' } }, 'CodeMemory Change-Aware Context Pack:'),
-          div({ style: { color: '#94a3b8' } }, '├── Focus File: src/services/PaymentService.ts (Modified 2m ago, Hotspot: 0.92)'),
-          div({ style: { color: '#94a3b8' } }, '├── Callers: src/api/webhooks.ts -> PaymentService.handleEvent()'),
-          div({ style: { color: '#94a3b8' } }, '├── Security Annotations: [security-scanner] PCI DSS safe, Stripe secret masked'),
-          div({ style: { color: '#94a3b8' } }, '└── Skill Rules: SKILLS.md 3.2: "Always verify idempotency before capture"'),
-          div({ style: { color: '#10b981', marginTop: '0.5rem' } }, '✓ Change-aware payload prepared (940 tokens — focused context slice)')
-        )
-      )
-    ),
-
-    // Feature Bento Grid
-    div(
-      { class: 'features-section' },
-      div(
-        { class: 'section-header' },
-        h2('Engineered for Next-Generation AI Pair Programming'),
-        p('Everything your AI agent needs to understand the architecture, conventions, and evolution of your codebase.')
-      ),
-      div(
-        { class: 'bento-grid' },
-        div(
+        { class: 'hero-actions' },
+        button(['Get Started →'], {
+          variant: 'custom',
+          class: 'btn-primary-pill',
+          onclick: () => navigateTo('docs', 'quick-start'),
+        }),
+        button(
+          [Icons.network(16), 'Explore Visualizer'],
           {
-            class: 'bento-card',
+            variant: 'custom',
+            class: 'btn-secondary-pill',
             onclick: () => {
               if (isLocalEnvironment) {
                 navigateTo('explorer');
@@ -933,75 +1032,207 @@ function renderLandingPage() {
                 isLocalLaunchModalOpen.value = true;
               }
             },
-            style: { cursor: 'pointer' },
+          }
+        ),
+        a(
+          {
+            href: 'https://github.com/EldrexDelosReyesBula/CodeMemory',
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            class: 'btn-secondary-pill',
           },
-          div({ class: 'bento-icon-box' }, Icons.network(22)),
-          h3('Live Architecture Explorer'),
-          p('Visual flowchart, symbol breakdowns, caller graphs, and daily change timeline running 100% locally on your machine.')
+          [Icons.github(16), 'GitHub']
+        )
+      ),
+
+      // Hero Metrics Strip
+      div(
+        { class: 'hero-metrics-strip' },
+        div(
+          { class: 'hero-metric-item' },
+          div({ class: 'hero-metric-val' }, '< 100ms'),
+          div({ class: 'hero-metric-label' }, 'Sync Latency')
         ),
         div(
-          { class: 'bento-card', onclick: () => navigateTo('docs', 'privacy-policy'), style: { cursor: 'pointer' } },
-          div({ class: 'bento-icon-box' }, Icons.shield(22)),
-          h3('100% Local & Private'),
-          p('Zero telemetry and zero external network calls. All structural graphs and historical diffs are stored strictly in your local SQLite WAL database.')
+          { class: 'hero-metric-item' },
+          div({ class: 'hero-metric-val' }, '0 KB'),
+          div({ class: 'hero-metric-label' }, 'Cloud Telemetry (100% Local)')
         ),
         div(
-          { class: 'bento-card', onclick: () => navigateTo('docs', 'token-optimization'), style: { cursor: 'pointer' } },
-          div({ class: 'bento-icon-box' }, Icons.zap(22)),
-          h3('Targeted Token Budgeting'),
-          p('Avoid flooding LLM context windows with entire files. CodeMemory ranks and serves only task-relevant symbols, callers, and recent changes.')
+          { class: 'hero-metric-item' },
+          div({ class: 'hero-metric-val' }, 'Up to 80%'),
+          div({ class: 'hero-metric-label' }, 'Token Budget Saved')
         ),
         div(
-          { class: 'bento-card', onclick: () => navigateTo('docs', 'cli-reference'), style: { cursor: 'pointer' } },
-          div({ class: 'bento-icon-box' }, Icons.search(22)),
-          h3('Multi-Language AST Analysis'),
-          p('Native extraction of classes, interfaces, methods, functions, and imports across TypeScript, JavaScript, Python, Rust, Go, SQL, and C++.')
-        ),
-        div(
-          { class: 'bento-card', onclick: () => navigateTo('docs', 'quick-start'), style: { cursor: 'pointer' } },
-          div({ class: 'bento-icon-box' }, Icons.activity(22)),
-          h3('Real-Time Live Watcher'),
-          p('Sub-100ms debounced file watcher synchronizes codebase intelligence immediately upon saving files while honoring .gitignore rules.')
-        ),
-        div(
-          { class: 'bento-card', onclick: () => navigateTo('docs', 'mcp-protocol'), style: { cursor: 'pointer' } },
-          div({ class: 'bento-icon-box' }, Icons.bot(22)),
-          h3('Native MCP Protocol Server'),
-          p('Connect VS Code Copilot, Cursor AI, Claude Desktop, Antigravity, and custom agent sidecars via official Model Context Protocol tools.')
+          { class: 'hero-metric-item' },
+          div({ class: 'hero-metric-val' }, '7+ Languages'),
+          div({ class: 'hero-metric-label' }, 'Multi-AST Grammar Engine')
         )
       )
     ),
 
-    // 3-Step Setup Section
+    // Paradigm Comparison Section (Why CodeMemory)
     div(
-      { class: 'steps-section' },
+      { class: 'cairn-comparison-section' },
       div(
         { class: 'section-header' },
-        h2('Get Up and Running in Seconds'),
-        p('Three simple commands to supercharge your AI coding workflows.')
+        h2('Why Engineering Teams Choose CodeMemory'),
+        p('The difference between guessing architecture and indexing deterministic truth.')
       ),
       div(
-        { class: 'steps-grid' },
+        { class: 'cairn-comparison-grid' },
+
+        // Old Way: Raw Dumps
         div(
-          { class: 'step-card' },
-          span({ class: 'step-num' }, 'Step 01'),
-          h4('Initialize Repository'),
-          p('Index symbols, extract AST structures, and initialize SQLite WAL store.'),
-          div({ class: 'step-code' }, 'npx @eldrex/codememory init')
+          { class: 'comparison-card' },
+          span({ class: 'comparison-badge bad' }, 'Blind Prompt Dumps'),
+          h3('Whole-Directory Dumps'),
+          p({ class: 'comparison-desc' }, 'Feeding raw files blindly into prompt context windows.'),
+          div(
+            { class: 'comparison-points' },
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Floods context with 40k+ unnecessary tokens')),
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('AI remains blind to caller paths & blast radius')),
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Frequent hallucination of non-existent methods')),
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Sluggish inference loops & runaway API bills'))
+          )
+        ),
+
+        // Remote Vector Way
+        div(
+          { class: 'comparison-card' },
+          span({ class: 'comparison-badge warn' }, 'Remote Embeddings'),
+          h3('Cloud Vector Databases'),
+          p({ class: 'comparison-desc' }, 'Uploading source code snippets to external vector clouds.'),
+          div(
+            { class: 'comparison-points' },
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Exfiltrates proprietary code to 3rd-party servers')),
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Fuzzy cosine search misses exact AST signatures')),
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Requires remote API keys & network connection')),
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Becomes rapidly stale between git checkouts'))
+          )
+        ),
+
+        // CodeMemory Way
+        div(
+          { class: 'comparison-card highlighted' },
+          span({ class: 'comparison-badge hero' }, 'The CodeMemory Way'),
+          h3('Local Deterministic AST'),
+          p({ class: 'comparison-desc' }, 'Precision code memory stored in local SQLite WAL mode.'),
+          div(
+            { class: 'comparison-points' },
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '⚡'), span('100% Local Sovereignty on your disk')),
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '⚡'), span('Exact AST Graph of classes, types & callers')),
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '⚡'), span('Task-Budgeted Slices saving up to 80% tokens')),
+            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '⚡'), span('Sub-100ms Live Watcher syncing on every save'))
+          )
+        )
+      )
+    ),
+
+    // Feature Grid (Structured CodeMemory Architecture)
+    div(
+      { class: 'cairn-features-section' },
+      div(
+        { class: 'section-header' },
+        h2('Engineered for Token Efficiency & Deep Structural Context'),
+        p('Equip AI agents with exact AST symbol graphs, caller hierarchies, and dependency trees without bloated prompts or cloud telemetry.')
+      ),
+      div(
+        { class: 'cairn-features-grid' },
+        div(
+          {
+            class: 'cairn-feature-card',
+            onclick: () => navigateTo('docs', 'cli-reference'),
+            style: { cursor: 'pointer' },
+          },
+          div({ class: 'cairn-card-icon icon-cyan' }, Icons.terminal(20)),
+          h3('Multi-Language AST Indexer'),
+          p('High-fidelity symbol extraction for classes, methods, functions, and imports across TypeScript, JavaScript, Python, Rust, Go, SQL, and C++.')
         ),
         div(
-          { class: 'step-card' },
-          span({ class: 'step-num' }, 'Step 02'),
-          h4('Start Live Watcher'),
-          p('Keep codebase memory automatically synchronized as you write code.'),
-          div({ class: 'step-code' }, 'npx @eldrex/codememory watch')
+          {
+            class: 'cairn-feature-card',
+            onclick: () => navigateTo('docs', 'token-optimization'),
+            style: { cursor: 'pointer' },
+          },
+          div({ class: 'cairn-card-icon icon-purple' }, Icons.zap(20)),
+          h3('Token-Budgeted Context Slicing'),
+          p('Eliminate prompt bloat. CodeMemory extracts and ranks only task-relevant AST symbols, caller paths, and recent diffs within strict token budgets.')
         ),
         div(
-          { class: 'step-card' },
-          span({ class: 'step-num' }, 'Step 03'),
-          h4('Launch Local Explorer'),
-          p('Inspect architecture, symbols, and change timeline in your browser.'),
-          div({ class: 'step-code' }, 'npx @eldrex/codememory web --open')
+          {
+            class: 'cairn-feature-card',
+            onclick: () => navigateTo('docs', 'privacy-policy'),
+            style: { cursor: 'pointer' },
+          },
+          div({ class: 'cairn-card-icon icon-green' }, Icons.shield(20)),
+          h3('Zero-Dependency Local Persistence'),
+          p('Engineered with pure Node.js and SQLite in WAL mode. 100% private, runs entirely on your local machine with zero external cloud telemetry.')
+        ),
+        div(
+          {
+            class: 'cairn-feature-card',
+            onclick: () => navigateTo('docs', 'domain-model'),
+            style: { cursor: 'pointer' },
+          },
+          div({ class: 'cairn-card-icon icon-violet' }, Icons.activity(20)),
+          h3('Sub-100ms Incremental Watcher'),
+          p('Real-time debounced file watcher keeps codebase memory synchronized instantly as you edit, respecting .gitignore and security rules.')
+        ),
+        div(
+          {
+            class: 'cairn-feature-card',
+            onclick: () => navigateTo('docs', 'mcp-protocol'),
+            style: { cursor: 'pointer' },
+          },
+          div({ class: 'cairn-card-icon icon-amber' }, Icons.bot(20)),
+          h3('Native Model Context Protocol'),
+          p('Standardized MCP tools connect seamlessly to Cursor AI, Claude Desktop, Antigravity, VS Code Copilot, and autonomous agent sidecars.')
+        ),
+        div(
+          {
+            class: 'cairn-feature-card',
+            onclick: () => navigateTo('docs', 'devdiff-integration'),
+            style: { cursor: 'pointer' },
+          },
+          div({ class: 'cairn-card-icon icon-rose' }, Icons.gitCommit(20)),
+          h3('Surgical Diff & Change Memory'),
+          p('Optional deep synergy with DevDiff for AST-aware diff comparisons, semantic commit generation, and historical change memory tracking.')
+        )
+      )
+    ),
+
+    // Big Sandbox / Visualizer CTA Card
+    div(
+      { class: 'cairn-cta-banner-section' },
+      div(
+        { class: 'cairn-cta-banner' },
+        h2('See Your Codebase Architecture Come Alive'),
+        p('Launch the local visualizer to explore interactive dependency flowcharts, caller hierarchies, hotspot analysis, and live watcher timelines.'),
+        div(
+          { class: 'cairn-cta-actions' },
+          button(
+            [Icons.play(16), 'Launch Visualizer'],
+            {
+              variant: 'custom',
+              class: 'btn-primary-pill',
+              onclick: () => {
+                if (isLocalEnvironment) {
+                  navigateTo('explorer');
+                } else {
+                  isLocalLaunchModalOpen.value = true;
+                }
+              },
+            }
+          ),
+          button(
+            [Icons.book(16), 'Quickstart Guide'],
+            {
+              variant: 'custom',
+              class: 'btn-secondary-pill',
+              onclick: () => navigateTo('docs', 'quick-start'),
+            }
+          )
         )
       )
     )
@@ -1046,7 +1277,7 @@ function renderCytoscapeGraph() {
   if (!container) return;
 
   const nodes = filteredArchNodes.value;
-  const edges = archEdges.value;
+  const edges = isBackendConnected.value ? archEdges.value : [];
   if (nodes.length === 0) return;
 
   const nodeMap = new Set(nodes.map((n) => n.path));
@@ -1210,7 +1441,7 @@ function renderCytoscapeGraph() {
       const path = evt.target.data('fullPath');
       inspectNode(path);
     });
-  } catch (err) {}
+  } catch (err) { }
 }
 
 function runCyLayout(layoutName) {
@@ -1263,19 +1494,60 @@ function runCyLayout(layoutName) {
 // --- Interactive Architecture & Memory Explorer View (Local Only) ---
 
 function renderArchitectureExplorer() {
-  if (!isLocalEnvironment) {
+  if (!isBackendConnected.value) {
     return div(
-      { class: 'explorer-container', style: { textAlign: 'center', padding: '5rem 1.5rem' } },
-      Icons.shield(48),
-      h2({ style: { marginTop: '1rem', color: '#fff' } }, 'Local-Only Visualization'),
-      p({ style: { color: 'var(--vp-c-text-3)', maxWidth: '500px', margin: '0.75rem auto 1.5rem' } },
-        'The Architecture Explorer runs 100% locally on your machine to protect your codebase privacy. Run `npx @eldrex/codememory web` in your terminal to start it.'
+      { class: 'explorer-container', style: { textAlign: 'center', padding: '4rem 1.5rem', maxWidth: '720px', margin: '0 auto' } },
+      div({ style: { display: 'inline-flex', padding: '1.25rem', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.12)', color: 'var(--vp-c-brand)', marginBottom: '1.25rem', border: '1px solid rgba(139, 92, 246, 0.25)' } }, Icons.network(36)),
+      h2({ style: { marginTop: '0.5rem', color: '#fff', fontSize: '1.75rem', fontWeight: '800' } }, 'Local Architecture & Memory Explorer'),
+      p({ style: { color: 'var(--vp-c-text-2)', lineHeight: '1.6', margin: '1rem auto 1.5rem' } },
+        'The live architecture explorer visualizes your local codebase AST symbols, caller trees, and real-time dependency topology directly from your local SQLite memory.'
       ),
-      button(['Back to Documentation', Icons.arrowRight(14)], {
-        variant: 'custom',
-        class: 'btn-primary',
-        onclick: () => navigateTo('docs'),
-      })
+      div(
+        {
+          class: 'hero-install-bar',
+          style: { maxWidth: '440px', margin: '0 auto 1.75rem', width: '100%', justifyContent: 'space-between' },
+          onclick: () => copyToClipboard('npx @eldrex/codememory web', 'Command copied!'),
+        },
+        div(
+          { style: { display: 'flex', alignItems: 'center', gap: '0.65rem' } },
+          span({ class: 'install-prompt' }, '$'),
+          span({ class: 'install-cmd' }, 'npx @eldrex/codememory web')
+        ),
+        button(
+          {
+            class: () => (copyNotice.value ? 'install-copy-btn copied' : 'install-copy-btn'),
+            type: 'button',
+            onclick: (e) => {
+              if (e && e.stopPropagation) e.stopPropagation();
+              copyToClipboard('npx @eldrex/codememory web', 'Command copied!');
+            },
+          },
+          () => (copyNotice.value ? 'Copied!' : 'Copy')
+        )
+      ),
+      div(
+        { style: { display: 'flex', gap: '0.85rem', justifyContent: 'center', flexWrap: 'wrap' } },
+        button(
+          {
+            variant: 'custom',
+            class: 'btn-primary-pill',
+            onclick: () => loadArchitectureMemory(),
+          },
+          [Icons.refresh(14), ' Connect to Local Server']
+        ),
+        button(
+          {
+            variant: 'custom',
+            class: 'btn-secondary-pill',
+            onclick: () => {
+              activeTab.value = 'docs';
+              selectedDocId.value = 'quick-start';
+              if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+          },
+          [Icons.zap(14), ' View Quick Start Guide']
+        )
+      )
     );
   }
 
@@ -1757,6 +2029,7 @@ function getCategoryIcon(category) {
     case 'Agent Skills': return Icons.brain(14);
     case 'Help & FAQ': return Icons.help(14);
     case 'Legal & Privacy': return Icons.scale(14);
+    case 'Releases': return Icons.activity(14);
     default: return Icons.folder(14);
   }
 }
@@ -1858,6 +2131,111 @@ function parseMarkdownCallouts(html) {
   });
 }
 
+function escapeHtml(str) {
+  return (str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function parseInline(text) {
+  return (text || '')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+}
+
+function renderMarkdownDocument(rawMarkdown) {
+  if (!rawMarkdown) return '';
+  let text = rawMarkdown.replace(/\\`\\`\\`/g, '```').replace(/\\`/g, '`');
+
+  if (typeof window !== 'undefined' && typeof window.marked !== 'undefined') {
+    try {
+      let html = window.marked.parse(text, { gfm: true, breaks: false });
+      html = html.replace(
+        /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g,
+        (match, codeText) => {
+          const cleanCode = unescapeHtmlEntities(codeText);
+          const encoded = encodeURIComponent(cleanCode);
+          return `<div class="mermaid-diagram-box" data-mermaid-code="${encoded}"></div>`;
+        }
+      );
+      return parseMarkdownCallouts(html);
+    } catch (e) {
+      console.warn('Marked parse fallback:', e);
+    }
+  }
+
+  // Robust fallback markdown parser
+  const lines = text.split('\n');
+  let inCode = false;
+  let codeLang = '';
+  let codeBuffer = [];
+  const out = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const codeMatch = line.match(/^```(\w*)/);
+    if (codeMatch) {
+      if (inCode) {
+        inCode = false;
+        const rawCode = codeBuffer.join('\n');
+        if (codeLang === 'mermaid') {
+          out.push(`<div class="mermaid-diagram-box" data-mermaid-code="${encodeURIComponent(rawCode)}"></div>`);
+        } else {
+          out.push(`<pre><code class="language-${codeLang || 'text'}">${escapeHtml(rawCode)}</code></pre>`);
+        }
+        codeBuffer = [];
+        codeLang = '';
+      } else {
+        inCode = true;
+        codeLang = codeMatch[1] || '';
+        codeBuffer = [];
+      }
+      continue;
+    }
+
+    if (inCode) {
+      codeBuffer.push(line);
+      continue;
+    }
+
+    if (line.startsWith('# ')) {
+      out.push(`<h1>${parseInline(line.slice(2))}</h1>`);
+    } else if (line.startsWith('## ')) {
+      out.push(`<h2>${parseInline(line.slice(3))}</h2>`);
+    } else if (line.startsWith('### ')) {
+      out.push(`<h3>${parseInline(line.slice(4))}</h3>`);
+    } else if (line.startsWith('#### ')) {
+      out.push(`<h4>${parseInline(line.slice(5))}</h4>`);
+    } else if (line.startsWith('> [!')) {
+      const calloutMatch = line.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)$/i);
+      if (calloutMatch) {
+        const type = calloutMatch[1].toLowerCase();
+        out.push(`<div class="vp-callout ${type}"><div class="vp-callout-title">${type.toUpperCase()}</div><p>${parseInline(calloutMatch[2] || '')}</p></div>`);
+      } else {
+        out.push(`<blockquote><p>${parseInline(line.slice(1).trim())}</p></blockquote>`);
+      }
+    } else if (line.startsWith('> ')) {
+      out.push(`<blockquote><p>${parseInline(line.slice(2))}</p></blockquote>`);
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      out.push(`<ul><li>${parseInline(line.slice(2))}</li></ul>`);
+    } else if (line.trim() === '---') {
+      out.push('<hr>');
+    } else if (line.trim()) {
+      out.push(`<p>${parseInline(line)}</p>`);
+    }
+  }
+
+  if (inCode && codeBuffer.length > 0) {
+    out.push(`<pre><code class="language-${codeLang || 'text'}">${escapeHtml(codeBuffer.join('\n'))}</code></pre>`);
+  }
+
+  return parseMarkdownCallouts(out.join('\n'));
+}
+
 function renderDocsContent() {
   return div(
     { class: 'vp-content-wrapper' },
@@ -1888,28 +2266,7 @@ function renderDocsContent() {
 
       const rawContent = doc.content || docContentCache[doc.id] || `# ${doc.title}\n\nLoading document content...`;
       const readingTime = calculateReadingTime(rawContent);
-
-      let rawHtml = '';
-      if (typeof window.marked !== 'undefined') {
-        try {
-          rawHtml = window.marked.parse(rawContent);
-        } catch (e) {
-          rawHtml = `<pre><code>${rawContent}</code></pre>`;
-        }
-      } else {
-        rawHtml = `<pre><code>${rawContent}</code></pre>`;
-      }
-
-      rawHtml = rawHtml.replace(
-        /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g,
-        (match, codeText) => {
-          const cleanCode = unescapeHtmlEntities(codeText);
-          const encoded = encodeURIComponent(cleanCode);
-          return `<div class="mermaid-diagram-box" data-mermaid-code="${encoded}"></div>`;
-        }
-      );
-
-      rawHtml = parseMarkdownCallouts(rawHtml);
+      const rawHtml = renderMarkdownDocument(rawContent);
 
       const articleEl = div({
         class: 'markdown-body',
@@ -1921,7 +2278,7 @@ function renderDocsContent() {
         if (typeof window.Prism !== 'undefined') {
           try {
             window.Prism.highlightAllUnder(articleEl);
-          } catch (e) {}
+          } catch (e) { }
         }
         initMermaidInArticle();
       }, 50);
@@ -2012,24 +2369,24 @@ function renderDocsContent() {
           { class: 'vp-doc-pager' },
           prevDoc
             ? div(
-                {
-                  class: 'vp-pager-link',
-                  onclick: () => navigateTo('docs', prevDoc.id),
-                },
-                span({ class: 'vp-pager-sub' }, [Icons.arrowLeft(12), ' Previous Page']),
-                span({ class: 'vp-pager-title' }, prevDoc.title)
-              )
+              {
+                class: 'vp-pager-link',
+                onclick: () => navigateTo('docs', prevDoc.id),
+              },
+              span({ class: 'vp-pager-sub' }, [Icons.arrowLeft(12), ' Previous Page']),
+              span({ class: 'vp-pager-title' }, prevDoc.title)
+            )
             : div(),
           nextDoc
             ? div(
-                {
-                  class: 'vp-pager-link',
-                  style: { textAlign: 'right' },
-                  onclick: () => navigateTo('docs', nextDoc.id),
-                },
-                span({ class: 'vp-pager-sub' }, ['Next Page ', Icons.arrowRight(12)]),
-                span({ class: 'vp-pager-title' }, nextDoc.title)
-              )
+              {
+                class: 'vp-pager-link',
+                style: { textAlign: 'right' },
+                onclick: () => navigateTo('docs', nextDoc.id),
+              },
+              span({ class: 'vp-pager-sub' }, ['Next Page ', Icons.arrowRight(12)]),
+              span({ class: 'vp-pager-title' }, nextDoc.title)
+            )
             : div()
         )
       );
@@ -2098,6 +2455,77 @@ function renderDocumentationHub() {
   );
 }
 
+// --- Footer (CairnJS Design System) ---
+
+function renderFooter() {
+  return Footer(
+    { class: 'cairn-footer' },
+    div(
+      { class: 'cairn-footer-top' },
+      div(
+        { class: 'cairn-footer-brand' },
+        div(
+          { class: 'footer-logo-row' },
+          img({
+            src: './assets/codememory-logo.png',
+            alt: 'CodeMemory Logo',
+            class: 'footer-logo-img',
+            onerror: (e) => {
+              if (!e.target.dataset.tried) {
+                e.target.dataset.tried = 'true';
+                e.target.src = '../assets/codememory-logo.png';
+              }
+            },
+          }),
+          span({ class: 'footer-brand-name' }, 'CodeMemory')
+        ),
+        p(
+          { class: 'footer-brand-desc' },
+          'A simple, standalone codebase memory engine and native Model Context Protocol (MCP) server for AI coding assistants — built with zero external dependencies.'
+        )
+      ),
+      div(
+        { class: 'cairn-footer-links' },
+        div(
+          { class: 'footer-link-col' },
+          h4('DOCUMENTATION'),
+          a({ onclick: () => navigateTo('docs', 'quick-start') }, 'Getting Started'),
+          a({ onclick: () => navigateTo('docs', 'installation') }, 'Installation'),
+          a({ onclick: () => navigateTo('docs', 'token-optimization') }, 'Token Budgeting'),
+          a({ onclick: () => navigateTo('docs', 'cli-reference') }, 'CLI Reference'),
+          a({ onclick: () => navigateTo('docs', 'mcp-protocol') }, 'MCP Protocol')
+        ),
+        div(
+          { class: 'footer-link-col' },
+          h4('ARCHITECTURE'),
+          a({ onclick: () => navigateTo('docs', 'domain-model') }, 'Domain Model'),
+          a({ onclick: () => navigateTo('docs', 'plugins') }, 'Plugin Engine'),
+          a({ onclick: () => navigateTo('docs', 'skills-guide') }, 'Agent Skills'),
+          a({ onclick: () => navigateTo('docs', 'devdiff-integration') }, 'DevDiff Synergy'),
+          a({ onclick: () => navigateTo('docs', 'privacy-policy') }, 'Privacy Guarantee')
+        ),
+        div(
+          { class: 'footer-link-col' },
+          h4('ECOSYSTEM'),
+          a({ onclick: () => navigateTo('docs', 'changelog') }, 'Release Changelog'),
+          a({ onclick: () => (isLocalEnvironment ? navigateTo('explorer') : (isLocalLaunchModalOpen.value = true)) }, 'Web Explorer'),
+          a({ href: 'https://github.com/EldrexDelosReyesBula/CodeMemory', target: '_blank', rel: 'noopener noreferrer' }, 'GitHub Repository'),
+          a({ href: 'https://github.com/EldrexDelosReyesBula', target: '_blank', rel: 'noopener noreferrer', style: { color: '#ec4899', fontWeight: '600' } }, 'Support Author ❤️')
+        )
+      )
+    ),
+    div(
+      { class: 'cairn-footer-bottom' },
+      p('Released under the MIT License. • Copyright © 2026 Eldrex Bula & CodeMemory Contributors.'),
+      p(
+        'Built with ',
+        a({ href: 'https://cairnjs.org', target: '_blank', style: { color: 'var(--vp-c-brand)' } }, 'CairnJS'),
+        ' — A Lightweight, Zero-Dependency Reactive Framework'
+      )
+    )
+  );
+}
+
 // --- Main App Root ---
 
 function renderApp() {
@@ -2122,16 +2550,7 @@ function renderApp() {
         }
       }
     ),
-    Footer(
-      { class: 'footer' },
-      p('CodeMemory v1.0.0 — The Persistent Engineering Context Layer for AI Agents.'),
-      p(
-        { style: { fontSize: '0.8rem', marginTop: '0.35rem', color: '#64748b' } },
-        'Official Documentation at ',
-        a({ href: 'https://codemem.vercel.app/', target: '_blank', style: { color: 'var(--vp-c-brand)' } }, 'codemem.vercel.app'),
-        '. Built by Eldrex Delos Reyes Bula with @eldrex/cairnjs v1.2.0. Licensed under MIT.'
-      )
-    )
+    renderFooter()
   );
 }
 

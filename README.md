@@ -53,8 +53,18 @@ npm run dev -- query authenticateUser
 # Extract token-budgeted AI context
 npm run dev -- context AuthService --budget 2000
 
-# Start the live background file watcher
+# Launch the interactive local Web Explorer (auto-opens browser)
+npm run dev -- web
+# or with explicit launch mode
+npm run dev -- web --mode auto
+npm run dev -- web --mode manual
+
+# Start in background daemon mode
+npm run dev -- web --daemon
+
+# Start the live background file watcher (quiet mode available)
 npm run dev -- watch
+npm run dev -- watch --quiet
 
 # Export Mermaid architecture diagram
 npm run dev -- export --format mermaid
@@ -88,8 +98,8 @@ Add the following to your MCP configuration (`mcp_config.json` or `claude_deskto
 {
   "mcpServers": {
     "codememory": {
-      "command": "node",
-      "args": ["c:/Users/Eldrex/Downloads/classhost/Needs/CodeMemory/dist/cli.js", "mcp"],
+      "command": "npx",
+      "args": ["-y", "@eldrex/codememory", "mcp"],
       "env": {}
     }
   }
@@ -113,6 +123,29 @@ CodeMemory/
 │   ├── mcp/            # Model Context Protocol stdio server
 │   └── cli.ts          # CLI commands router
 └── tests/              # Complete Vitest test suite
+```
+
+---
+
+## 🔌 Optional Integrations
+
+CodeMemory works 100% standalone out-of-the-box. When used alongside **DevDiff**, you can leverage optional integration commands:
+
+```bash
+# Verify synchronization between Git-tracked files and CodeMemory index
+codememory devdiff sync
+
+# Check for untracked or unindexed files in workspace
+codememory devdiff compare
+
+# Analyze direct and indirect caller dependencies for specific files
+codememory devdiff impact src/cli.ts
+
+# View file change records and AST symbols
+codememory devdiff explain src/cli.ts
+
+# Start Unified MCP Server (combines CodeMemory and DevDiff tools)
+codememory mcp --unified
 ```
 
 ---

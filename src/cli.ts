@@ -22,7 +22,7 @@ const program = new Command();
 program
   .name('codememory')
   .description('A Persistent Engineering Context Layer for AI-Assisted Development')
-  .version('1.0.0');
+  .version('2.0.0');
 
 // 1. init
 program
@@ -85,16 +85,20 @@ program
   .command('watch')
   .description('Start the real-time background file watcher')
   .option('-d, --debounce <ms>', 'Debounce window in ms', '100')
+  .option('-q, --quiet', 'Suppress file event logging')
   .action((options) => {
     console.log(chalk.bold.cyan('\n👁️ CodeMemory Real-Time Watcher'));
     console.log(chalk.gray('Watching repository for changes... (Press Ctrl+C to exit)\n'));
 
     const db = new CodeMemoryDB();
     const watcher = new FileWatcherEngine(db, {
-      debounceMs: parseInt(options.debounce, 10),
+      debounceMs: parseInt(options.debounce, 10) || 100,
+      quiet: options.quiet ?? false,
       onEvent: (event, filePath) => {
-        const timeStr = new Date().toLocaleTimeString();
-        console.log(chalk.gray(`[${timeStr}] `) + chalk.yellow(`${event.padEnd(8)} `) + chalk.white(filePath));
+        if (!options.quiet) {
+          const timeStr = new Date().toLocaleTimeString();
+          console.log(chalk.gray(`[${timeStr}] `) + chalk.yellow(`${event.padEnd(8)} `) + chalk.white(filePath));
+        }
       },
     });
 
@@ -107,18 +111,36 @@ program
     });
   });
 
-// 4. web (Architecture Explorer & Documentation Server)
+// 4. web (Interactive Web Explorer & Local Server)
 program
   .command('web')
   .description('Launch the local interactive Architecture Explorer and Documentation portal')
   .option('-p, --port <port>', 'Server port (default: 3737)', '3737')
   .option('-h, --host <host>', 'Host binding (default: 127.0.0.1)', '127.0.0.1')
+  .option('-m, --mode <mode>', 'Launch mode: auto (auto-open browser) or manual (print URL only)', 'auto')
   .option('--open', 'Open browser automatically')
+  .option('--daemon', 'Run server in background daemon process')
   .action(async (options) => {
     const port = parseInt(options.port, 10) || 3737;
     const host = options.host || '127.0.0.1';
+
+    if (options.daemon) {
+      const { spawn } = await import('node:child_process');
+      const filteredArgs = process.argv.slice(2).filter((a) => a !== '--daemon');
+      const child = spawn(process.execPath, [process.argv[1], ...filteredArgs], {
+        detached: true,
+        stdio: 'ignore',
+      });
+      child.unref();
+      console.log(chalk.bold.green('\n✓ CodeMemory Web Explorer started in background'));
+      console.log(chalk.gray(`  URL: http://${host}:${port}`));
+      console.log(chalk.gray(`  PID: ${child.pid}\n`));
+      process.exit(0);
+    }
+
     const db = new CodeMemoryDB();
     const watcher = new FileWatcherEngine(db, {
+      quiet: true,
       onEvent: (eventType, filePath) => {
         webServer.broadcastEvent(eventType, { path: filePath });
       },
@@ -133,18 +155,27 @@ program
 
     try {
       const { url } = await webServer.start();
-      console.log(chalk.bold.cyan('\n🌐 CodeMemory Documentation Hub & Architecture Explorer\n'));
-      console.log(chalk.green(`  ✓ Server running at: ${chalk.bold.underline(url)}`));
-      console.log(chalk.gray('  • Documentation Portal: ') + chalk.white(`${url}#docs`));
-      console.log(chalk.gray('  • Interactive Explorer: ') + chalk.white(`${url}`));
-      console.log(chalk.gray('\nReal-time file changes will update the graph & docs automatically.'));
-      console.log(chalk.gray('Press Ctrl+C to stop.\n'));
+      console.log('\n' + chalk.cyan('┌─────────────────────────────────────────┐'));
+      console.log(chalk.cyan('│') + chalk.bold.white('       CodeMemory Web Explorer           ') + chalk.cyan('│'));
+      console.log(chalk.cyan('├─────────────────────────────────────────┤'));
+      console.log(chalk.cyan('│') + '                                         ' + chalk.cyan('│'));
+      console.log(chalk.cyan('│') + `  Local URL: ${chalk.green.bold(url.padEnd(28))}` + chalk.cyan('│'));
+      console.log(chalk.cyan('│') + '                                         ' + chalk.cyan('│'));
+      console.log(chalk.cyan('│') + chalk.gray('  Press Ctrl+C to stop                   ') + chalk.cyan('│'));
+      console.log(chalk.cyan('│') + '                                         ' + chalk.cyan('│'));
+      console.log(chalk.cyan('└─────────────────────────────────────────┘\n'));
 
-      if (options.open) {
+      const shouldOpen = options.open || options.mode === 'auto';
+      if (shouldOpen) {
         import('node:child_process').then(({ exec }) => {
-          const cmd = process.platform === 'win32' ? `start ${url}` : process.platform === 'darwin' ? `open ${url}` : `xdg-open ${url}`;
-          exec(cmd);
-        });
+          const cmd =
+            process.platform === 'win32'
+              ? `start "" "${url}"`
+              : process.platform === 'darwin'
+              ? `open "${url}"`
+              : `xdg-open "${url}"`;
+          exec(cmd, () => {});
+        }).catch(() => {});
       }
 
       process.on('SIGINT', async () => {
@@ -617,14 +648,103 @@ program
     console.log(chalk.green('CodeMemory database cleaned successfully.'));
   });
 
-// 15. mcp
+// 15. devdiff — Optional DevDiff Integration Commands
+const devdiffCmd = program.command('devdiff').description('DevDiff integration utilities and memory synchronization');
+
+devdiffCmd
+  .command('sync')
+  .description('Synchronize Git-tracked files with CodeMemory index')
+  .action(async () => {
+    const { CodeMemoryBridge } = await import('./devdiff/bridge.js');
+    const db = new CodeMemoryDB();
+    CodeMemoryBridge.setLocalDatabase(db);
+
+    console.log(chalk.cyan('\nSynchronizing repository tracking with CodeMemory...\n'));
+    const report = await CodeMemoryBridge.sync();
+    console.log(`  • CodeMemory indexed files : ${chalk.bold(report.codeMemoryFiles)}`);
+    console.log(`  • Repository tracked files : ${chalk.bold(report.trackedFiles)}`);
+    console.log(`  • Indexed & tracked in both: ${chalk.bold(report.inBoth)}`);
+    console.log(`\n  Status: ${report.synchronized ? chalk.green('Synchronized') : chalk.yellow('Untracked files exist')}\n`);
+  });
+
+devdiffCmd
+  .command('compare')
+  .description('Compare tracked repository files with CodeMemory index')
+  .action(async () => {
+    const { CodeMemoryBridge } = await import('./devdiff/bridge.js');
+    const db = new CodeMemoryDB();
+    CodeMemoryBridge.setLocalDatabase(db);
+
+    const comparison = await CodeMemoryBridge.compare();
+    console.log('\n' + comparison + '\n');
+  });
+
+devdiffCmd
+  .command('impact [files...]')
+  .description('Analyze direct and indirect caller dependencies for specified files')
+  .action(async (files) => {
+    const { CodeMemoryBridge } = await import('./devdiff/bridge.js');
+    const db = new CodeMemoryDB();
+    CodeMemoryBridge.setLocalDatabase(db);
+
+    const targetFiles = files && files.length > 0 ? files : ['src/cli.ts'];
+    console.log(chalk.cyan('\nDependency Impact Analysis:\n'));
+
+    const impacts = await CodeMemoryBridge.analyzeImpact(targetFiles);
+    for (const imp of impacts) {
+      console.log(`  File: ${chalk.bold.white(imp.file)} (${imp.dependentCount} direct dependents)`);
+      if (imp.directDependents.length > 0) {
+        for (const dep of imp.directDependents.slice(0, 5)) {
+          console.log(chalk.gray(`    ↳ ${dep.path}`));
+        }
+        if (imp.directDependents.length > 5) {
+          console.log(chalk.gray(`    ... and ${imp.directDependents.length - 5} more`));
+        }
+      }
+      console.log('');
+    }
+  });
+
+devdiffCmd
+  .command('explain <file>')
+  .description('Display file change history with associated symbols')
+  .action(async (file) => {
+    const db = new CodeMemoryDB();
+    const history = db.getHistoryForPath(file, 5);
+    const symbols = db.getSymbolsForFile(file);
+    const callers = db.getDependentsForFile(file);
+
+    console.log(chalk.cyan(`\nFile Summary: ${chalk.bold.white(file)}\n`));
+    console.log(`  • AST Symbols: ${symbols.length}`);
+    console.log(`  • Dependents : ${callers.length}`);
+    console.log(`  • History    : ${history.length} change record(s)`);
+    console.log('');
+
+    if (history.length > 0) {
+      console.log(chalk.bold.white('  Recent Changes:'));
+      for (const h of history) {
+        console.log(chalk.gray(`    [${h.timestamp.slice(0, 10)}] ${h.gitAuthor || 'User'}: ${h.diffSummary || h.gitMessage || h.eventType}`));
+      }
+      console.log('');
+    }
+  });
+
+// 16. mcp
 program
   .command('mcp')
   .description('Launch Model Context Protocol (MCP) server over stdio')
-  .action(async () => {
-    const server = new CodeMemoryMCPServer();
-    await server.start();
+  .option('--unified', 'Launch DevDiff × CodeMemory Unified MCP Server')
+  .action(async (options) => {
+    if (options.unified) {
+      const { UnifiedMCPServer } = await import('./mcp/unified.js');
+      const server = new UnifiedMCPServer();
+      await server.start();
+    } else {
+      const server = new CodeMemoryMCPServer();
+      await server.start();
+    }
   });
 
 program.parse(process.argv);
+
 

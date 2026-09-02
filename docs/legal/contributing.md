@@ -1,96 +1,135 @@
 # Contributing to CodeMemory
 
-Thank you for your interest in contributing to **CodeMemory** (`@eldrex/codememory`)! We welcome contributions from engineers, AI researchers, plugin authors, and open-source enthusiasts.
+Thank you for your interest in contributing to **CodeMemory** (`@eldrex/codememory`) — the local-first, AST-powered structural memory layer for AI coding assistants.
+
+We welcome contributions from engineers, AI researchers, plugin authors, language parser contributors, and documentation writers.
 
 ---
 
-## 🌟 Philosophy & Guiding Principles
+## Engineering Philosophy
 
-1. **Local-First & Zero Telemetry**: Never introduce network calls or analytics into core operations.
-2. **Deterministic & Fast**: CodeMemory must be lightning fast (<100ms response time for context slicing).
-3. **Type Safety & Testing**: Every PR must be written in strict TypeScript and include unit tests.
+Every contribution to CodeMemory is held to these non-negotiable principles:
+
+| Principle | What It Means |
+| :--- | :--- |
+| **Local-First, Zero Telemetry** | Never introduce outbound network calls, analytics, or cloud SDK dependencies into core engine operations |
+| **Deterministic & Sub-100ms** | The context slicing engine must remain fast. Benchmark any change that touches the parser, ranker, or database layer |
+| **Strict TypeScript** | All source code in `src/` is written in strict-mode TypeScript with explicit return types |
+| **Test Coverage** | Every new feature or bug fix must include a corresponding Vitest test in `tests/` |
 
 ---
 
-## 🛠️ Local Development Workflow
+## Local Development Setup
 
-### 1. Prerequisites
-- **Node.js**: v20.0.0 or higher (v22+ recommended)
-- **Git**: 2.30+
+### Prerequisites
 
-### 2. Fork & Clone
-\`\`\`bash
+- **Node.js:** v20.0.0+ (v22+ recommended)
+- **Git:** 2.30+
+
+### 1. Fork & Clone
+
+```bash
+# Fork via GitHub UI, then:
 git clone https://github.com/<your-username>/CodeMemory.git
 cd CodeMemory
-\`\`\`
+```
 
-### 3. Install Dependencies
-\`\`\`bash
+### 2. Install Dependencies
+
+```bash
 npm install
-\`\`\`
+```
 
-### 4. Build & Run Tests
-\`\`\`bash
-# Build TypeScript
+### 3. Build & Verify
+
+```bash
+# Compile TypeScript to dist/
 npm run build
 
-# Run Vitest test suite
+# Run the full Vitest test suite (36 tests across 10 suites)
 npm test
 
-# Run tests in watch mode
+# Run tests in watch mode during development
 npm run test:watch
-\`\`\`
+```
 
-### 5. Running the Local CLI
-\`\`\`bash
-# Run CLI via tsx
+### 4. Run the CLI Locally
+
+```bash
+# Run CLI commands directly via tsx (no build required)
 npx tsx src/cli.ts status
+npx tsx src/cli.ts scan .
+npx tsx src/cli.ts web
 
-# Or link globally for testing
+# Or link globally for end-to-end testing
 npm link
-\`\`\`
+codememory status
+```
 
 ---
 
-## 🌿 Branching Strategy & Pull Requests
+## Codebase Structure
 
-1. **Branch Naming**:
-   - `feature/add-go-ast-parser`
-   - `fix/sqlite-wal-locking`
-   - `docs/update-ide-setup`
-2. **Commit Messages**: Follow Conventional Commits:
-   - `feat(parser): add support for Rust struct extraction`
-   - `fix(watcher): handle rapid file rename events`
-   - `docs(mcp): clarify stdio transport setup`
-3. **Pull Request Checklist**:
-   - [ ] All Vitest tests pass (`npm test`).
-   - [ ] TypeScript compilation succeeds with zero errors (`npm run build`).
-   - [ ] Code is formatted cleanly.
-   - [ ] New features include relevant unit tests in `tests/`.
-
----
-
-## 🏛️ Codebase Structure
-
-\`\`\`
+```
 CodeMemory/
 ├── src/
-│   ├── cli.ts            # Commander CLI entrypoint & subcommands
-│   ├── db/               # SQLite WAL database layer & schema migrations
-│   ├── parser/           # Multi-language AST regex/symbol extractor
-│   ├── watcher/          # Debounced Chokidar file event watcher
-│   ├── context/          # Relevance ranking engine & token budgeter
-│   ├── mcp/              # Model Context Protocol stdio server
-│   ├── plugins/          # Plugin lifecycle & manifest validator
-│   ├── skills/           # SKILLS.md parser & convention extractor
-│   └── web/              # Local interactive architecture visualizer
-├── docs/                 # Documentation corpus (VitePress structure)
-├── website/              # Zero-build CairnJS web visualizer & documentation UI
-└── tests/                # Vitest automated test suite
-\`\`\`
+│   ├── cli.ts              # Commander CLI entrypoint & all subcommands
+│   ├── db/                 # SQLite WAL schema, migrations, prepared statements
+│   ├── parser/             # Multi-language AST regex/symbol extractor
+│   ├── watcher/            # Debounced Chokidar file event watcher
+│   ├── context/            # Relevance ranking engine & token budget slicer
+│   ├── mcp/                # Model Context Protocol stdio server & tool definitions
+│   ├── plugins/            # Plugin lifecycle manager & manifest validator
+│   ├── skills/             # SKILLS.md parser & agent convention extractor
+│   └── web/                # Local interactive architecture web server
+├── tests/                  # Vitest automated test suite
+├── docs/                   # Product documentation markdown corpus
+├── website/                # CairnJS-powered public docs & Web Explorer UI
+├── ARCHITECTURE.md         # System data flow & domain boundary reference
+└── SKILLS.md               # CodeMemory's own agent skill conventions
+```
 
 ---
 
-## 🤝 Code of Conduct
+## Branching Strategy & Pull Requests
 
-Please review our [Code of Conduct](./code-of-conduct.md) before participating in the community.
+**Branch naming:**
+```
+feature/add-go-struct-parser
+fix/sqlite-wal-lock-timeout
+docs/update-mcp-tool-signatures
+perf/reduce-context-slice-latency
+```
+
+**Commit messages** follow [Conventional Commits](https://www.conventionalcommits.org/):
+```
+feat(parser): add support for Rust enum and impl block extraction
+fix(watcher): handle rapid sequential file rename events correctly
+docs(cli): clarify --unified flag behavior in CLI reference
+perf(context): reduce symbol ranking from O(n²) to O(n log n)
+```
+
+**PR Checklist before opening:**
+
+- [ ] `npm run build` compiles with zero TypeScript errors
+- [ ] `npm test` passes all 36 tests
+- [ ] New functionality includes unit tests in `tests/`
+- [ ] No outbound network calls introduced in `src/`
+- [ ] No hardcoded absolute file paths or machine-specific values
+
+---
+
+## What We Welcome
+
+- **New language parser support** (Kotlin, Swift, Java, C#, PHP)
+- **Plugin API extensions** with backwards compatibility
+- **Performance improvements** to the AST indexer or context ranker
+- **Documentation fixes** and improved code examples
+- **IDE integration guides** for new MCP-compatible editors
+- **Bug reports** with clear reproduction steps
+
+---
+
+## Code of Conduct
+
+All contributors are expected to follow our [Code of Conduct](./code-of-conduct.md). We maintain a respectful, inclusive engineering community.

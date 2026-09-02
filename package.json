@@ -1,6 +1,6 @@
 {
   "name": "@eldrex/codememory",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "The Persistent Intelligence Layer for Codebases - Local-first CLI & MCP server for AI agents",
   "type": "module",
   "bin": {
@@ -32,7 +32,8 @@
     "test:watch": "vitest",
     "prepack": "npm run build && npm test",
     "start": "node dist/cli.js",
-    "mcp": "tsx src/cli.ts mcp"
+    "mcp": "tsx src/cli.ts mcp",
+    "mcp:unified": "tsx src/cli.ts mcp --unified"
   },
   "keywords": [
     "ai",
@@ -47,12 +48,25 @@
   "author": "Eldrex Delos Reyes Bula",
   "license": "MIT",
   "dependencies": {
-    "@eldrex/cairnjs": "^1.2.0",
+    "@eldrex/antigravity": "^1.9.0",
+    "@eldrex/cairnjs": "^1.4.0",
+    "@eldrex/cli": "^1.9.0",
+    "@eldrex/codememory": "^1.0.0",
+    "@eldrex/connectors": "^1.9.0",
+    "@eldrex/core": "^1.9.0",
+    "@eldrex/gateway": "^1.9.0",
+    "@eldrex/mcp": "^1.9.0",
+    "@eldrex/openclaw": "^1.9.0",
+    "@eldrex/personas": "^1.9.0",
+    "@eldrex/plugin-sdk": "^1.9.0",
+    "@eldrex/vite": "^1.9.0",
+    "@eldrex/vscode": "^1.0.0",
     "@modelcontextprotocol/sdk": "^1.6.1",
     "chalk": "^5.4.1",
     "chokidar": "^4.0.3",
     "cli-table3": "^0.6.5",
     "commander": "^13.1.0",
+    "devdiff": "^1.9.0",
     "ignore": "^7.0.3",
     "ora": "^8.2.0",
     "zod": "^3.24.2"
@@ -62,5 +76,8 @@
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

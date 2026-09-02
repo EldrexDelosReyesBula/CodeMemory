@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-09-01
+
+### Added
+- **Optional DevDiff Integration Plugin (`@eldrex/plugin-codememory`)**:
+  - Implementation of `@eldrex/plugin-sdk` `DevDiffPlugin` lifecycle hooks (`beforeAnalysis`, `afterAnalysis`, `onFileChange`, `onCommit`).
+  - Enables DevDiff to draw from CodeMemory's multi-language AST symbol index and dependency topology.
+  - Optional `codememory devdiff` CLI commands (`sync`, `compare`, `impact`, `explain`) and `--unified` MCP transport.
+- **Enhanced Local Web Explorer**:
+  - Direct root resolution avoiding 404 errors regardless of working directory.
+  - Animated live-watcher connection indicator.
+  - Dedicated external link to the hosted documentation site (`https://codemem.vercel.app/`).
+
+### Improved
+- **Database Concurrency & Lock Resilience**:
+  - Configured `PRAGMA journal_mode = WAL;`, `PRAGMA synchronous = NORMAL;`, and `PRAGMA busy_timeout = 5000;`.
+  - Added synchronous exponential retry loop (`withRetry<T>`) for multi-process SQLite write safety.
+- **Watcher Engine Reliability**:
+  - Suppressed transient file lock noise during high-frequency git checkouts and batch writes.
+  - Added `--quiet` watch flag for silent background daemon mode.
+
 ---
 
 ## [1.0.0] - 2026-08-25
