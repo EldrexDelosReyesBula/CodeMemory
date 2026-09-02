@@ -773,6 +773,7 @@ nav.main-nav {
   margin-bottom: 0.25rem;
   background: linear-gradient(135deg, #ffffff 30%, #c4b5fd 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
