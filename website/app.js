@@ -970,9 +970,9 @@ function renderLandingPage() {
           style: { cursor: 'pointer' },
         },
         span({ class: 'hero-pill-dot' }),
-        span({ class: 'hero-pill-ver' }, 'v2.0.0 Architecture'),
+        span({ class: 'hero-pill-ver' }, 'v2.0.0'),
         span({ class: 'hero-pill-sep' }, '•'),
-        span({ class: 'hero-pill-action' }, ["Sub-100ms Incremental Engine →"])
+        span({ class: 'hero-pill-action' }, ["What's New →"])
       ),
 
       // Main Headline
@@ -1067,64 +1067,6 @@ function renderLandingPage() {
           { class: 'hero-metric-item' },
           div({ class: 'hero-metric-val' }, '7+ Languages'),
           div({ class: 'hero-metric-label' }, 'Multi-AST Grammar Engine')
-        )
-      )
-    ),
-
-    // Paradigm Comparison Section (Why CodeMemory)
-    div(
-      { class: 'cairn-comparison-section' },
-      div(
-        { class: 'section-header' },
-        h2('Why Engineering Teams Choose CodeMemory'),
-        p('The difference between guessing architecture and indexing deterministic truth.')
-      ),
-      div(
-        { class: 'cairn-comparison-grid' },
-
-        // Old Way: Raw Dumps
-        div(
-          { class: 'comparison-card' },
-          span({ class: 'comparison-badge bad' }, 'Blind Prompt Dumps'),
-          h3('Whole-Directory Dumps'),
-          p({ class: 'comparison-desc' }, 'Feeding raw files blindly into prompt context windows.'),
-          div(
-            { class: 'comparison-points' },
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Floods context with 40k+ unnecessary tokens')),
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('AI remains blind to caller paths & blast radius')),
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Frequent hallucination of non-existent methods')),
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Sluggish inference loops & runaway API bills'))
-          )
-        ),
-
-        // Remote Vector Way
-        div(
-          { class: 'comparison-card' },
-          span({ class: 'comparison-badge warn' }, 'Remote Embeddings'),
-          h3('Cloud Vector Databases'),
-          p({ class: 'comparison-desc' }, 'Uploading source code snippets to external vector clouds.'),
-          div(
-            { class: 'comparison-points' },
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Exfiltrates proprietary code to 3rd-party servers')),
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Fuzzy cosine search misses exact AST signatures')),
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Requires remote API keys & network connection')),
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '❌'), span('Becomes rapidly stale between git checkouts'))
-          )
-        ),
-
-        // CodeMemory Way
-        div(
-          { class: 'comparison-card highlighted' },
-          span({ class: 'comparison-badge hero' }, 'The CodeMemory Way'),
-          h3('Local Deterministic AST'),
-          p({ class: 'comparison-desc' }, 'Precision code memory stored in local SQLite WAL mode.'),
-          div(
-            { class: 'comparison-points' },
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '⚡'), span('100% Local Sovereignty on your disk')),
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '⚡'), span('Exact AST Graph of classes, types & callers')),
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '⚡'), span('Task-Budgeted Slices saving up to 80% tokens')),
-            div({ class: 'comparison-point' }, span({ class: 'point-icon' }, '⚡'), span('Sub-100ms Live Watcher syncing on every save'))
-          )
         )
       )
     ),

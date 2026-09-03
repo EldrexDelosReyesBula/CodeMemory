@@ -560,6 +560,8 @@ nav.main-nav {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 15px rgba(56, 189, 248, 0.15);
   backdrop-filter: blur(8px);
   transition: all 0.2s ease;
+  white-space: nowrap;
+  max-width: 95%;
 }
 
 .hero-pill:hover {
@@ -785,119 +787,24 @@ nav.main-nav {
   letter-spacing: 0.05em;
 }
 
-/* --- Paradigm Comparison Grid --- */
-.cairn-comparison-section {
-  max-width: 1120px;
-  margin: 6.5rem auto 0;
-  padding: 0 1.5rem;
-}
-
-.cairn-comparison-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-}
-
-.comparison-card {
-  background: #090d16;
-  border: 1px solid #161f2e;
-  border-radius: 1rem;
-  padding: 2.25rem 1.75rem;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  transition: all 0.25s ease;
-}
-
-.comparison-card.highlighted {
-  background: #0c1222;
-  border-color: rgba(139, 92, 246, 0.55);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(139, 92, 246, 0.15);
-}
-
-.comparison-badge {
-  display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0.25rem 0.65rem;
-  border-radius: 9999px;
-  margin-bottom: 1rem;
-  width: fit-content;
-}
-
-.comparison-badge.bad {
-  background: rgba(239, 68, 68, 0.12);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.comparison-badge.warn {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.comparison-badge.hero {
-  background: rgba(139, 92, 246, 0.15);
-  color: #c4b5fd;
-  border: 1px solid rgba(139, 92, 246, 0.45);
-}
-
-.comparison-card h3 {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #fff;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.02em;
-}
-
-.comparison-card p.comparison-desc {
-  font-size: 0.875rem;
-  color: var(--vp-c-text-3);
-  line-height: 1.55;
-  margin-bottom: 1.5rem;
-}
-
-.comparison-points {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  font-size: 0.875rem;
-}
-
-.comparison-point {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  line-height: 1.5;
-  color: var(--vp-c-text-2);
-}
-
-.comparison-point .point-icon {
-  font-size: 0.95rem;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .hero-metrics-strip {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.85rem;
+    gap: 0.75rem;
+    margin-top: 2rem;
   }
-  .cairn-comparison-grid {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
-  }
-}
 
-@media (max-width: 540px) {
-  .hero-metrics-strip {
-    grid-template-columns: 1fr;
+  .hero-metric-item {
+    padding: 0.95rem 0.65rem;
+    border-radius: 0.75rem;
+  }
+
+  .hero-metric-val {
+    font-size: 1.3rem;
+  }
+
+  .hero-metric-label {
+    font-size: 0.68rem;
   }
 }
 
@@ -3154,7 +3061,7 @@ nav.main-nav {
   }
 
   .landing-hero {
-    padding: 2.25rem 1rem 1.5rem;
+    padding: 2rem 0.85rem 1.5rem;
   }
 
   .hero-floating-icon {
@@ -3162,25 +3069,34 @@ nav.main-nav {
     height: 52px;
   }
 
+  .hero-pill {
+    font-size: 0.725rem;
+    padding: 0.28rem 0.75rem;
+    gap: 0.35rem;
+    margin-bottom: 1.25rem;
+    max-width: 95%;
+  }
+
   .hero-title {
-    font-size: 1.85rem;
-    margin-bottom: 0.9rem;
+    font-size: clamp(1.6rem, 5.2vw, 2.05rem);
+    margin-bottom: 0.85rem;
     line-height: 1.2;
+    letter-spacing: -0.025em;
   }
 
   .hero-subtitle {
     font-size: 0.875rem;
     margin-bottom: 1.4rem;
-    line-height: 1.5;
+    line-height: 1.55;
+    padding: 0 0.25rem;
   }
 
   .hero-install-bar {
     max-width: 100%;
     width: 100%;
     justify-content: space-between;
-    font-size: 0.76rem;
+    font-size: 0.78rem;
     padding: 0.35rem 0.5rem 0.35rem 0.85rem;
-    overflow-x: auto;
   }
 
   .hero-actions {
@@ -3194,6 +3110,26 @@ nav.main-nav {
     width: 100%;
     justify-content: center;
     padding: 0.7rem 1.25rem;
+  }
+
+  .hero-metrics-strip {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+    margin-top: 1.75rem;
+    width: 100%;
+  }
+
+  .hero-metric-item {
+    padding: 0.85rem 0.5rem;
+    border-radius: 0.75rem;
+  }
+
+  .hero-metric-val {
+    font-size: 1.25rem;
+  }
+
+  .hero-metric-label {
+    font-size: 0.65rem;
   }
 
   .cairn-features-section {
