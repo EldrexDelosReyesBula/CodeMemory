@@ -51,7 +51,6 @@
     "@eldrex/antigravity": "^1.9.0",
     "@eldrex/cairnjs": "^1.4.0",
     "@eldrex/cli": "^1.9.0",
-    "@eldrex/codememory": "^1.0.0",
     "@eldrex/connectors": "^1.9.0",
     "@eldrex/core": "^1.9.0",
     "@eldrex/gateway": "^1.9.0",
